@@ -1,0 +1,20 @@
+{namespace com.pbaranchikov.stash.eol.check}
+/**
+ * @param config
+ * @param? errors
+ */
+{template .formContents}
+    {call aui.form.textField}
+        /** set the name of the input field -- this will be used as the setting key */
+        {param id: 'excludeFiles' /}
+        /** supply the previous value to the text field so the user can see the saved data */
+        {param value: $config['excludeFiles'] /}
+        {param labelContent}
+            {stash_i18n('stash.check.eol.excludeFiles', 'Exclude files')}
+        {/param}
+        {param descriptionText: stash_i18n('stash.check.eol.excludeFiles.description', 'Files, that should not be checked for EOL') /}
+        {param extraClasses: 'long' /}
+        /** if validation returned errors then display them in the error text. */
+        {param errorTexts: $errors ? $errors['excludeFiles'] : null /}
+    {/call}
+{/template}

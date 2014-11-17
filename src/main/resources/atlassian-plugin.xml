@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<atlassian-plugin key="com.pbaranchikov.stash-eol-check" name="stash-eol-check" plugins-version="2">
+    <plugin-info>
+        <description>This is the end-of-line style restriction plugin. It forces all the text files to have Linux-style end-of-line, as
+        it is described in the ProGit book.</description>
+        <version>1.0-SNAPSHOT</version>
+        <vendor name="Pavel Baranchikov" url="https://github.com/pbaranchikov/"/>
+        <param name="plugin-icon">images/pluginIcon.png</param>
+        <param name="plugin-logo">images/pluginLogo.png</param>
+    </plugin-info>
+    <resource type="i18n" name="check-eol" location="com.pbaranchikov.stash.checks"/>
+    <web-resource key="stash-eol-check-resources" name="stash-eol-check Web Resources">
+        <dependency>com.atlassian.auiplugin:ajs</dependency>
+        <resource type="download" name="stash-eol-check.css" location="/css/stash-eol-check.css"/>
+        <resource type="download" name="stash-eol-check.js" location="/js/stash-eol-check.js"/>
+        <resource type="download" name="images/" location="/images"/>
+        <resource type="download" name="stash-eol-check.soy.js" location="/soy/stash-eol-check.soy"/>
+        <context>stash-eol-check</context>
+    </web-resource>
+    <component key="mergeBaseResolver" class="com.pbaranchikov.stash.checks.MergeBaseResolver" public="false"/>
+    <component key="realParentResolver" class="com.pbaranchikov.stash.checks.RealParentResolver" public="false"/>
+    <component key="eolMergeCheck" class="com.pbaranchikov.stash.checks.EolCheckHook" public="false"/>
+    <component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties"/>
+    <component-import key="commitService" interface="com.atlassian.stash.commit.CommitService"/>
+    <component-import key="builderFactory" interface="com.atlassian.stash.scm.git.GitCommandBuilderFactory"/>
+    <component-import key="gitScmConfig" interface="com.atlassian.stash.scm.git.GitScmConfig"/>
+    <component-import key="i18nService" interface="com.atlassian.stash.i18n.I18nService"/>
+    <repository-hook name="Check end-of-line" key="check-eol-hook" class="com.pbaranchikov.stash.checks.EolCheckHook">
+        <config-form name="Simple Hook Config" key="simpleHook-config">
+             <view>com.pbaranchikov.stash.eol.check.formContents</view>
+             <directory location="/soy/"/>
+        </config-form>
+        <icon>images/pluginLogo.png</icon>
+        <description key="stash-check-eol.description">Hook to force Linux EOL for all the committed text files</description>
+    </repository-hook>
+    <merge-check key="check-eol" class="bean:eolMergeCheck"/>
+</atlassian-plugin>
