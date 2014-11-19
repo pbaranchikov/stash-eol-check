@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<atlassian-plugin key="com.pbaranchikov.stash-eol-check" name="stash-eol-check" plugins-version="2">
+<atlassian-plugin key="${project.groupId}.${project.artifactId}" name="${project.name}" plugins-version="2">
     <plugin-info>
         <description>This is the end-of-line style restriction plugin. It forces all the text files to have Linux-style end-of-line, as
         it is described in the ProGit book.</description>
-        <version>1.0-SNAPSHOT</version>
+        <version>${project.version}</version>
         <vendor name="Pavel Baranchikov" url="https://github.com/pbaranchikov/"/>
         <param name="plugin-icon">images/pluginIcon.png</param>
         <param name="plugin-logo">images/pluginLogo.png</param>
