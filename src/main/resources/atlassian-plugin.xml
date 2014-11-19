@@ -19,7 +19,6 @@
     </web-resource>
     <component key="mergeBaseResolver" class="com.pbaranchikov.stash.checks.MergeBaseResolver" public="false"/>
     <component key="realParentResolver" class="com.pbaranchikov.stash.checks.RealParentResolver" public="false"/>
-    <component key="eolMergeCheck" class="com.pbaranchikov.stash.checks.EolCheckHook" public="false"/>
     <component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties"/>
     <component-import key="commitService" interface="com.atlassian.stash.commit.CommitService"/>
     <component-import key="builderFactory" interface="com.atlassian.stash.scm.git.GitCommandBuilderFactory"/>
@@ -33,5 +32,4 @@
         <icon>images/pluginLogo.png</icon>
         <description key="stash-check-eol.description">Hook to force Linux EOL for all the committed text files</description>
     </repository-hook>
-    <merge-check key="check-eol" class="bean:eolMergeCheck"/>
 </atlassian-plugin>

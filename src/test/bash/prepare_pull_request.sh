@@ -23,5 +23,5 @@ create_bad_pr() {
     popd
 }
 
-#create_good_pr
+create_good_pr
 create_bad_pr

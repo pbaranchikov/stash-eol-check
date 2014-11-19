@@ -18,6 +18,8 @@ import com.atlassian.stash.content.Changeset;
 import com.atlassian.stash.hook.HookResponse;
 import com.atlassian.stash.hook.repository.PreReceiveRepositoryHook;
 import com.atlassian.stash.hook.repository.RepositoryHookContext;
+import com.atlassian.stash.hook.repository.RepositoryMergeRequestCheck;
+import com.atlassian.stash.hook.repository.RepositoryMergeRequestCheckContext;
 import com.atlassian.stash.i18n.I18nService;
 import com.atlassian.stash.pull.PullRequest;
 import com.atlassian.stash.pull.PullRequestRef;
@@ -28,7 +30,7 @@ import com.atlassian.stash.scm.git.GitCommand;
 import com.atlassian.stash.scm.git.GitCommandBuilderFactory;
 import com.atlassian.stash.scm.git.diff.GitDiffBuilder;
 import com.atlassian.stash.scm.pull.MergeRequest;
-import com.atlassian.stash.scm.pull.MergeRequestCheck;
+import com.atlassian.stash.setting.Settings;
 import com.atlassian.utils.process.ProcessException;
 import com.atlassian.utils.process.Watchdog;
 
@@ -37,7 +39,7 @@ import com.atlassian.utils.process.Watchdog;
  * EOL style of the data, committed to stash/git.
  * @author Pavel Baranchikov
  */
-public class EolCheckHook implements PreReceiveRepositoryHook, MergeRequestCheck {
+public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRequestCheck {
 
     private static final char EOL = '\n';
     private static final int CR = 0x0D;
@@ -64,7 +66,7 @@ public class EolCheckHook implements PreReceiveRepositoryHook, MergeRequestCheck
     @Override
     public boolean onReceive(RepositoryHookContext context, Collection<RefChange> changes,
             HookResponse response) {
-        final Collection<Pattern> excludedFiles = getExcludeFiles(context);
+        final Collection<Pattern> excludedFiles = getExcludeFiles(context.getSettings());
         final Collection<String> files = new TreeSet<String>();
         for (RefChange refChange : changes) {
             files.addAll(processChange(context, refChange, excludedFiles));
@@ -78,13 +80,13 @@ public class EolCheckHook implements PreReceiveRepositoryHook, MergeRequestCheck
     }
 
     @Override
-    public void check(MergeRequest request) {
+    public void check(RepositoryMergeRequestCheckContext context) {
+        final MergeRequest request = context.getMergeRequest();
         final PullRequest pr = request.getPullRequest();
         final Changeset prFrom = getChangeSet(pr.getFromRef());
         final Changeset prTo = getChangeSet(pr.getToRef());
         final Changeset base = mergeBaseResolver.findMergeBase(prFrom, prTo);
-        // TODO discover settings from merge request
-        final Collection<Pattern> excludeFiles = Collections.emptyList();
+        final Collection<Pattern> excludeFiles = getExcludeFiles(context.getSettings());
         final Collection<String> wrongFiles = processMergedChanges(base, prFrom, excludeFiles);
         if (!wrongFiles.isEmpty()) {
             request.veto(i18service.getText("wrong.eol.style.check.error",
@@ -181,8 +183,8 @@ public class EolCheckHook implements PreReceiveRepositoryHook, MergeRequestCheck
         return wrongPaths;
     }
 
-    private static Collection<Pattern> getExcludeFiles(RepositoryHookContext context) {
-        final String includeFiles = context.getSettings().getString(EXCLUDE_FILES_NAME);
+    private static Collection<Pattern> getExcludeFiles(Settings settings) {
+        final String includeFiles = settings.getString(EXCLUDE_FILES_NAME);
         if (includeFiles == null) {
             return Collections.emptyList();
         }
