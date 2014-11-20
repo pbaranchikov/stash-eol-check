@@ -15,6 +15,7 @@ import com.atlassian.stash.content.AbstractChangeCallback;
 import com.atlassian.stash.content.Change;
 import com.atlassian.stash.content.ChangesRequest;
 import com.atlassian.stash.content.Changeset;
+import com.atlassian.stash.content.DiffSegmentType;
 import com.atlassian.stash.hook.HookResponse;
 import com.atlassian.stash.hook.repository.PreReceiveRepositoryHook;
 import com.atlassian.stash.hook.repository.RepositoryHookContext;
@@ -42,7 +43,6 @@ import com.atlassian.utils.process.Watchdog;
 public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRequestCheck {
 
     private static final char EOL = '\n';
-    private static final int CR = 0x0D;
     private static final String PATTERNS_SEPARATOR = ",";
     private static final String EXCLUDE_FILES_NAME = "excludeFiles";
     private static final String GIT_WHITESPACE_REFERENCE = "http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-Whitespace";
@@ -243,11 +243,23 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         @Override
         public void process(InputStream output) throws ProcessException {
             try {
+                boolean newLine = true;
+                DiffSegmentType segmentType = DiffSegmentType.CONTEXT;
                 for (int nextChar = output.read(); nextChar >= 0; nextChar = output.read()) {
-                    if (nextChar == CR) {
+                    if (newLine) {
+                        if (nextChar == '+') {
+                            segmentType = DiffSegmentType.ADDED;
+                        } else if (nextChar == '-') {
+                            segmentType = DiffSegmentType.REMOVED;
+                        } else {
+                            segmentType = DiffSegmentType.CONTEXT;
+                        }
+                    }
+                    if (segmentType == DiffSegmentType.ADDED && nextChar == Constants.CR) {
                         allOk = false;
                         break;
                     }
+                    newLine = nextChar == Constants.CR || nextChar == Constants.LF;
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Error reading data from diff file", e);
