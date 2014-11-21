@@ -85,7 +85,8 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         final Changeset prTo = getChangeSet(pr.getToRef());
         final Changeset base = mergeBaseResolver.findMergeBase(prFrom, prTo);
         final Collection<Pattern> excludeFiles = getExcludeFiles(context.getSettings());
-        final Collection<String> wrongFiles = processMergedChanges(base, prFrom, excludeFiles);
+        final Collection<String> wrongFiles = processMergedChanges(base, prFrom, excludeFiles,
+                context.getSettings());
         if (!wrongFiles.isEmpty()) {
             request.veto(i18service.getText("wrong.eol.style.check.error",
                     "Wrong EOL-style used in the pull request"), getPullRequestError(wrongFiles));
@@ -108,10 +109,11 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
     }
 
     private Collection<String> processMergedChanges(Changeset base, Changeset prFrom,
-            Collection<Pattern> excludeFiles) {
+            Collection<Pattern> excludeFiles, Settings settings) {
         final Collection<String> changedFiles = getChangedPaths(prFrom.getRepository(),
                 base.getId(), prFrom.getId(), excludeFiles);
-        return checkForWrongEol(changedFiles, prFrom.getRepository(), base.getId(), prFrom.getId());
+        return checkForWrongEol(changedFiles, prFrom.getRepository(), base.getId(), prFrom.getId(),
+                settings);
     }
 
     private Changeset getChangeSet(PullRequestRef prRef) {
@@ -160,19 +162,24 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         }
         final Collection<String> changedPaths = getChangedPaths(context.getRepository(), fromId,
                 toId, excludeFiles);
-        return checkForWrongEol(changedPaths, context.getRepository(), fromId, toId);
+        return checkForWrongEol(changedPaths, context.getRepository(), fromId, toId,
+                context.getSettings());
     }
 
     private Collection<String> checkForWrongEol(Collection<String> changedPaths, Repository repo,
-            String since, String to) {
+            String since, String to, Settings settings) {
         final Collection<String> wrongPaths = new HashSet<String>();
         for (String path : changedPaths) {
-            final GitDiffBuilder builder = builderFactory.builder(repo).diff().rev(to)
-                    .contextLines(0).path(path);
+            final GitDiffBuilder builder = builderFactory.builder(repo).diff().rev(to).path(path);
             if (since != null) {
                 builder.ancestor(since);
             }
-            final GitCommand<Boolean> cmd = builder.build(new Handler());
+            final boolean allowInheritedEol = Boolean.TRUE.equals(settings
+                    .getBoolean(Constants.SETTING_ALLOW_INHERITED_EOL));
+            final AbstractEolHandler outputHandler = allowInheritedEol ? new AllowInheritedStyleEolHandler()
+                    : new StrictEolHandler();
+            builder.contextLines(outputHandler.getRequiredContext());
+            final GitCommand<Boolean> cmd = builder.build(outputHandler);
             final Boolean result = cmd.call();
             if (!result) {
                 wrongPaths.add(path);
@@ -232,10 +239,13 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
     }
 
     /**
-     * Output handler, looking for CR symbol. The result command returns false,
-     * if CR symbol is found.
+     * Output handler, looking for CR symbol. <br/>
+     * Returns <code>true</code> if all the changes look Ok. <br/>
+     * Class is statefull. It is to be used strictly for one and only one output
+     * handling.
      */
-    private static class Handler implements CommandOutputHandler<Boolean> {
+    private abstract static class AbstractEolHandler implements CommandOutputHandler<Boolean> {
+
         private boolean allOk = true;
 
         @Override
@@ -253,15 +263,28 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
                             segmentType = DiffSegmentType.CONTEXT;
                         }
                     }
-                    if (segmentType == DiffSegmentType.ADDED && nextChar == Constants.CR) {
-                        allOk = false;
-                        break;
-                    }
+                    process(segmentType, nextChar);
                     newLine = nextChar == Constants.CR || nextChar == Constants.LF;
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Error reading data from diff file", e);
             }
+        }
+
+        /**
+         * Processes the next char according to the specified segment type.
+         * @param segmentType segment type this char belongs to
+         * @param nextChar next character
+         * @return whether the further processing should be performed
+         */
+        protected abstract boolean process(DiffSegmentType segmentType, int nextChar);
+
+        protected void setResult(boolean allOk) {
+            this.allOk = allOk;
+        }
+
+        protected boolean getResult() {
+            return allOk;
         }
 
         @Override
@@ -277,6 +300,67 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
             return allOk;
         }
 
+        /**
+         * Returns number of context lines, that are required for the handler to
+         * perform analysis.
+         * @return number of context lines to load within diff
+         */
+        public abstract int getRequiredContext();
+
+    }
+
+    /**
+     * Strict Eol checker - forces that every file has only LF-style
+     * end-of-line. <br/>
+     * Handler just search for the first occurrence of the CR symbol in the
+     * added lines. When it finds - it returns error result immediately
+     */
+    private static class StrictEolHandler extends AbstractEolHandler {
+        @Override
+        protected boolean process(DiffSegmentType segmentType, int nextChar) {
+            if (segmentType == DiffSegmentType.ADDED && nextChar == Constants.CR) {
+                setResult(false);
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public int getRequiredContext() {
+            // No context is needed for this type of check.
+            return 0;
+        }
+    }
+
+    /**
+     * Eol-checker, allowing the EOL-style, that file have before the commit. <br/>
+     * Handler searches for CR in all the lines. If it finds CR in the removed
+     * lines, handler returns non-error result immediately. In other case, if
+     * there is no CR in ALL added lines, handler returns non-error result after
+     * all the parsing. Otherwise, error result is returned.
+     */
+    private static class AllowInheritedStyleEolHandler extends AbstractEolHandler {
+        @Override
+        protected boolean process(DiffSegmentType segmentType, int nextChar) {
+            // We get info about old EOL-style from both context and removed
+            // lines. Descriptive lines, that are generated by git itself are
+            // always in LF style
+            if (segmentType != DiffSegmentType.ADDED && nextChar == Constants.CR) {
+                setResult(true);
+                return false;
+            }
+            if (getResult() && segmentType == DiffSegmentType.ADDED && nextChar == Constants.CR) {
+                setResult(false);
+            }
+            return true;
+        }
+
+        @Override
+        public int getRequiredContext() {
+            // At lease one line of context is needed to determine file's
+            // initial EOL-style
+            return 1;
+        }
     }
 
 }

@@ -22,6 +22,10 @@ public class Constants {
      */
     public static final String SETTING_EXCLUDED_FILES = "excludeFiles";
     /**
+     * Setting name for allowing inherited EOL style.
+     */
+    public static final String SETTING_ALLOW_INHERITED_EOL = "allowInheritedEol";
+    /**
      * Separator, used in settings to distinguish excluded patterns from one
      * another.
      */

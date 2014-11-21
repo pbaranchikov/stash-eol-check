@@ -20,14 +20,20 @@ prepare_repo() {
 }
 
 make_good_commit() {
-    local filename=good-file-`date +%F-%T.%N`.file
+    local filename=$1
+    if [ -z "$filename" ]; then
+        local filename=good-file-`date +%F-%T.%N`.file
+    fi
     echo -e "\nthis\nis\ngood\ncommit\n" > $filename
     git add $filename
     git commit -m "Added good file $filename"
 }
 
 make_bad_commit() {
-    local filename=bad-file-`date +%F-%T.%N`.file
+    local filename=$1
+    if [ -z "$filename" ]; then
+        local filename=bad-file-`date +%F-%T.%N`.file
+    fi
     echo -e "\nthis\r\nis\r\nbad\r\ncommit\r\n" > $filename
     unix2dos $filename
     git add $filename
