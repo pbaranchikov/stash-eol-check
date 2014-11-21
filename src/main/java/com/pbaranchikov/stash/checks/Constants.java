@@ -17,6 +17,15 @@ public class Constants {
      * Line feed symbol.
      */
     public static final int LF = 0x0A;
+    /**
+     * Setting name for excluded files.
+     */
+    public static final String SETTING_EXCLUDED_FILES = "excludeFiles";
+    /**
+     * Separator, used in settings to distinguish excluded patterns from one
+     * another.
+     */
+    public static final String PATTERNS_SEPARATOR = ",";
 
     private Constants() {
     }

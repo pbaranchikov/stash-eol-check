@@ -31,5 +31,6 @@
         </config-form>
         <icon>images/pluginLogo.png</icon>
         <description key="stash-check-eol.description">Hook to force Linux EOL for all the committed text files</description>
+        <validator>com.pbaranchikov.stash.checks.HookSettingsValidator</validator>
     </repository-hook>
 </atlassian-plugin>

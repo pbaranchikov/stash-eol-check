@@ -43,8 +43,6 @@ import com.atlassian.utils.process.Watchdog;
 public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRequestCheck {
 
     private static final char EOL = '\n';
-    private static final String PATTERNS_SEPARATOR = ",";
-    private static final String EXCLUDE_FILES_NAME = "excludeFiles";
     private static final String GIT_WHITESPACE_REFERENCE = "http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-Whitespace";
 
     private final CommitService commitService;
@@ -184,11 +182,11 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
     }
 
     private static Collection<Pattern> getExcludeFiles(Settings settings) {
-        final String includeFiles = settings.getString(EXCLUDE_FILES_NAME);
+        final String includeFiles = settings.getString(Constants.SETTING_EXCLUDED_FILES);
         if (includeFiles == null) {
             return Collections.emptyList();
         }
-        final String[] patternStrings = includeFiles.split(PATTERNS_SEPARATOR);
+        final String[] patternStrings = includeFiles.split(Constants.PATTERNS_SEPARATOR);
         final Collection<Pattern> patterns = new ArrayList<Pattern>(patternStrings.length);
         for (String patternString : patternStrings) {
             final Pattern pattern = Pattern.compile(patternString);
