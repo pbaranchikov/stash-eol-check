@@ -23,6 +23,16 @@ EOL-style of the committed code. Only Linux-style code is allowed.
   list of filename patterns which should not he checked (should be ignored)
   by this plugin in both pre-commit hook and pull request merge check.
 
+## Known issues
+* only last commit is analyzed in pre-receive hook during the initial push
+
+## Packaging and test execution
+Widely advertised Wired testing framework seems broken in Stash, according to
+STASH-5523 and STASH-4616. So, to execute tests correctly, you are to run
+atlas-debug -DskipTests
+And when the application starts, you cat perform the testing
+atlas-package
+
 ## Version history
 
 ### Version 0.2
@@ -30,6 +40,7 @@ EOL-style of the committed code. Only Linux-style code is allowed.
 - Fixed false error when converting EOL from CRLF to LF
 - Added hook (and merge check) settings form validation
 - Added checkbox to allow inherited EOL-style
+- Added manually-executed integration tests
 
 ### Version 0.1
 - Initial release

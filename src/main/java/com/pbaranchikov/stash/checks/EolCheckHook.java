@@ -168,14 +168,14 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
 
     private Collection<String> checkForWrongEol(Collection<String> changedPaths, Repository repo,
             String since, String to, Settings settings) {
+        final boolean allowInheritedEol = Boolean.TRUE.equals(settings
+                .getBoolean(Constants.SETTING_ALLOW_INHERITED_EOL));
         final Collection<String> wrongPaths = new HashSet<String>();
         for (String path : changedPaths) {
             final GitDiffBuilder builder = builderFactory.builder(repo).diff().rev(to).path(path);
             if (since != null) {
                 builder.ancestor(since);
             }
-            final boolean allowInheritedEol = Boolean.TRUE.equals(settings
-                    .getBoolean(Constants.SETTING_ALLOW_INHERITED_EOL));
             final AbstractEolHandler outputHandler = allowInheritedEol ? new AllowInheritedStyleEolHandler()
                     : new StrictEolHandler();
             builder.contextLines(outputHandler.getRequiredContext());
@@ -263,7 +263,9 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
                             segmentType = DiffSegmentType.CONTEXT;
                         }
                     }
-                    process(segmentType, nextChar);
+                    if (!process(segmentType, nextChar)) {
+                        break;
+                    }
                     newLine = nextChar == Constants.CR || nextChar == Constants.LF;
                 }
             } catch (IOException e) {
