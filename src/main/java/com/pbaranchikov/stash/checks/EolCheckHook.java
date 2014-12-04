@@ -128,7 +128,7 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         for (String path : files) {
             printLn(response, "  " + path);
         }
-        printLn(response, "Please, take a loot at " + GIT_WHITESPACE_REFERENCE
+        printLn(response, "Please, take a look at " + GIT_WHITESPACE_REFERENCE
                 + " for more information");
     }
 
