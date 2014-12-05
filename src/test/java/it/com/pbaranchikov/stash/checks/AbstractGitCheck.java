@@ -1,8 +1,14 @@
-package ut.com.pbaranchikov.stash.checks;
+package it.com.pbaranchikov.stash.checks;
+
+import it.com.pbaranchikov.stash.checks.utils.Project;
+import it.com.pbaranchikov.stash.checks.utils.Repository;
+import it.com.pbaranchikov.stash.checks.utils.Workspace;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
@@ -31,10 +37,6 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.After;
 import org.junit.Before;
 
-import ut.com.pbaranchikov.stash.checks.utils.Project;
-import ut.com.pbaranchikov.stash.checks.utils.Repository;
-import ut.com.pbaranchikov.stash.checks.utils.Workspace;
-
 import com.google.common.io.Files;
 import com.pbaranchikov.stash.checks.Constants;
 
@@ -53,10 +55,7 @@ public abstract class AbstractGitCheck {
     protected static final String GOOD_FILE = "goodFile";
     protected static final String BAD_FILE = "badFile";
 
-    private static final String STASH_HOST = "localhost:7990/stash";
-    private static final String STASH_URL = "http://" + STASH_HOST;
-
-    private static final String STASH_REST_URL = STASH_URL + "/rest/api/1.0";
+    private static final String STASH_REST_PATH = "/rest/api/1.0";
     private static final String REST_PROJECTS = "/projects";
     private static final String REST_REPOSITORIES = "/repos";
     private static final String REST_DELIMITER = "/";
@@ -65,7 +64,7 @@ public abstract class AbstractGitCheck {
     private static final String KEY = "key";
     private static final String STASH_USER = "admin";
     private static final String STASH_PASSWORD = STASH_USER;
-    private static final String HOOK_KEY = "com.pbaranchikov.stash-eol-check:check-eol-hook";
+    private static final String HOOK_KEY = "com.pbaranchikov.stash-eol-check:stash-check-eol-hook";
 
     private static final String PROJECT_KEY = "PROJECT_FOR_TESTS";
     private static final String REPOSITORY_KEY = "TEST_REPOSITORY";
@@ -73,11 +72,14 @@ public abstract class AbstractGitCheck {
     private static final String RANDOM_FILE = "randomFile";
 
     private static final String GIT_BRANCH = "branch";
+    private static final String GIT_TAG = "tag";
     private static final String GIT_PUSH = "push";
     private static final String GIT_ORIGIN = "origin";
     private static final String GIT = "git";
 
     private static final String EOL = "\n";
+
+    private static final String PROP_INSTANCE_URL = "baseurl.stash";
 
     private final HttpClient httpClient;
     private final HttpClientContext httpContext;
@@ -86,15 +88,26 @@ public abstract class AbstractGitCheck {
     private Project project;
     private Workspace workspace;
     private int fileCounter;
+    private final URL stashUrl;
 
     protected AbstractGitCheck() {
+        final String instanceUrl = System.getProperty(PROP_INSTANCE_URL);
+        if (instanceUrl == null || instanceUrl.isEmpty()) {
+            throw new IllegalArgumentException(PROP_INSTANCE_URL + " system property is to be set");
+        }
+        try {
+            stashUrl = new URL(instanceUrl);
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+
         final CredentialsProvider provider = new BasicCredentialsProvider();
         final UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(STASH_USER,
                 STASH_PASSWORD);
         provider.setCredentials(AuthScope.ANY, credentials);
 
         final AuthCache authCache = new BasicAuthCache();
-        final HttpHost host = new HttpHost("localhost", 7990);
+        final HttpHost host = new HttpHost(stashUrl.getHost(), stashUrl.getPort());
         authCache.put(host, new BasicScheme());
 
         httpClient = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
@@ -137,8 +150,9 @@ public abstract class AbstractGitCheck {
 
         }
 
-        performPostQuery(STASH_REST_URL + REST_PROJECTS, new BuildJSON().addKey(KEY, projectKey)
-                .addKey(NAME, projectKey).addKey("description", projectKey).build());
+        performPostQuery(stashUrl.toString() + STASH_REST_PATH + REST_PROJECTS, new BuildJSON()
+                .addKey(KEY, projectKey).addKey(NAME, projectKey).addKey("description", projectKey)
+                .build());
         return new RestProject(projectKey);
     }
 
@@ -200,17 +214,21 @@ public abstract class AbstractGitCheck {
         return RANDOM_FILE + (fileCounter++);
     }
 
-    protected static ExecutionResult executeGitCommand(File workspaceDir, String... parameters)
-            throws Exception {
+    protected static ExecutionResult executeGitCommand(File workspaceDir, String... parameters) {
         final Runtime rt = Runtime.getRuntime();
         final String[] cmdArray = new String[parameters.length + 1];
         System.arraycopy(parameters, 0, cmdArray, 1, parameters.length);
         cmdArray[0] = GIT;
-        final Process pr = rt.exec(cmdArray, new String[] {}, workspaceDir);
-        final int exitCode = pr.waitFor();
-        final String output = IOUtils.toString(pr.getInputStream());
-        final String err = IOUtils.toString(pr.getErrorStream());
-        return new ExecutionResult(exitCode, output, err);
+        try {
+            final Process pr = rt.exec(cmdArray, new String[] {}, workspaceDir);
+            final int exitCode = pr.waitFor();
+            final String output = IOUtils.toString(pr.getInputStream());
+            final String err = IOUtils.toString(pr.getErrorStream());
+            return new ExecutionResult(exitCode, output, err);
+        } catch (Exception e) {
+            throw new GitException("Error executing command " + Arrays.toString(cmdArray), e);
+
+        }
     }
 
     /**
@@ -282,7 +300,7 @@ public abstract class AbstractGitCheck {
         }
 
         public String getUrl() {
-            return STASH_REST_URL + REST_PROJECTS + REST_DELIMITER + key;
+            return stashUrl.toString() + STASH_REST_PATH + REST_PROJECTS + REST_DELIMITER + key;
         }
 
         @Override
@@ -321,8 +339,7 @@ public abstract class AbstractGitCheck {
         }
 
         @Override
-        public Workspace cloneRepository() throws Exception {
-            final Runtime rt = Runtime.getRuntime();
+        public Workspace cloneRepository() {
             final File tempDir = Files.createTempDir();
             final ExecutionResult result = executeGitCommand(tempDir.getParentFile(), "clone",
                     getCloneUrl(), tempDir.getAbsolutePath());
@@ -334,8 +351,9 @@ public abstract class AbstractGitCheck {
 
         @Override
         public String getCloneUrl() {
-            return "http://admin:admin@" + STASH_HOST + "/scm/" + project.getKey() + REST_DELIMITER
-                    + key;
+            return String.format("%s://%s:%s@%s:%d%s/scm/%s/%s", stashUrl.getProtocol(),
+                    STASH_USER, STASH_PASSWORD, stashUrl.getHost(), stashUrl.getPort(),
+                    stashUrl.getPath(), project.getKey(), key);
         }
 
         @Override
@@ -390,66 +408,74 @@ public abstract class AbstractGitCheck {
             this.workspaceDir = workspaceDir;
         }
 
-        private ExecutionResult executeGitCommandImpl(String... parameters) throws Exception {
+        private ExecutionResult executeGitCommandImpl(String... parameters) {
             return executeGitCommand(workspaceDir, parameters);
         }
 
-        private void executeCommand(String... parameters) throws Exception {
+        private void executeCommand(String... parameters) {
             final ExecutionResult result = executeGitCommandImpl(parameters);
             if (result.getExitCode() != 0) {
                 throw new GitExecutionException(result);
             }
         }
 
+        private void writeToFile(File file, String contents) {
+            try {
+                FileUtils.write(file, contents);
+            } catch (IOException e) {
+                throw new GitException("Error writing to file " + file, e);
+            }
+        }
+
         @Override
-        public File commitNewFile(String filename, String contents) throws Exception {
+        public File commitNewFile(String filename, String contents) {
             final File newFile = new File(workspaceDir, filename);
-            FileUtils.write(newFile, contents);
+            writeToFile(newFile, contents);
             add(newFile.getAbsolutePath());
             commit(filename + " added");
             return newFile;
         }
 
         @Override
-        public void add(String filename) throws Exception {
+        public void add(String filename) {
             executeCommand("add", filename);
         }
 
-        public void commit(String message) throws Exception {
+        public void commit(String message) {
             executeCommand("commit", "-m", message);
         }
 
         @Override
-        public void checkout(String branchName) throws Exception {
+        public void checkout(String branchName) {
             executeCommand("checkout", branchName);
         }
 
         @Override
-        public void branch(String branchName) throws Exception {
+        public void branch(String branchName) {
             executeCommand(GIT_BRANCH, branchName);
         }
 
         @Override
-        public boolean push() throws Exception {
+        public boolean push() {
             final ExecutionResult result = executeGitCommandImpl(GIT_PUSH);
             return result.getExitCode() == 0;
         }
 
         @Override
-        public boolean push(String branchName) throws Exception {
+        public boolean push(String branchName) {
             final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN, branchName);
             return result.getExitCode() == 0;
         }
 
         @Override
-        public boolean pushRemoval(String branchName) throws Exception {
+        public boolean pushRemoval(String branchName) {
             final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN, ":"
                     + branchName);
             return result.getExitCode() == 0;
         }
 
         @Override
-        public void setCrlf(String crlf) throws Exception {
+        public void setCrlf(String crlf) {
             config("core.autocrlf", crlf);
         }
 
@@ -459,16 +485,31 @@ public abstract class AbstractGitCheck {
         }
 
         @Override
-        public void config(String... parameters) throws Exception {
+        public void config(String... parameters) {
             executeCommand((String[]) ArrayUtils.addAll(new String[] {"config", "--local"},
                     parameters));
         }
 
         @Override
-        public void commitNewContents(File targetFile, String newContents) throws Exception {
-            FileUtils.write(targetFile, newContents);
+        public void commitNewContents(File targetFile, String newContents) {
+            writeToFile(targetFile, newContents);
             add(targetFile.getPath());
             commit("Changed contents of file " + targetFile.getPath());
+        }
+
+        @Override
+        public boolean createTag(String tagName) {
+            executeCommand(GIT_TAG, tagName);
+            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN, tagName);
+            return result.getExitCode() == 0;
+        }
+
+        @Override
+        public boolean removeTag(String tagName) {
+            executeCommand(GIT_TAG, "-d", tagName);
+            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN,
+                    ":/refs/tags/" + tagName);
+            return result.getExitCode() == 0;
         }
 
     }
@@ -510,6 +551,18 @@ public abstract class AbstractGitCheck {
 
         public GitExecutionException(ExecutionResult result) {
             super("Error executing git command\n" + result.getStdout() + EOL + result.getStderr());
+        }
+    }
+
+    /**
+     * Exception to throw on git operations error.
+     * @author Pavel Baranchikov
+     */
+    public static class GitException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        public GitException(String commands, Throwable cause) {
+            super(commands, cause);
         }
     }
 

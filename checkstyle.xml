@@ -154,7 +154,9 @@
         <module name="MissingOverride"/>
         <module name="VisibilityModifier"/>
 
-        <module name="Indentation"/>
+        <module name="Indentation">
+            <property name="throwsIndent" value="8"/>
+        </module>
 
         <module name="TrailingComment"/>
 

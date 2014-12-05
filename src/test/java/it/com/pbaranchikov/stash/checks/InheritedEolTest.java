@@ -1,4 +1,4 @@
-package ut.com.pbaranchikov.stash.checks;
+package it.com.pbaranchikov.stash.checks;
 
 import java.io.File;
 

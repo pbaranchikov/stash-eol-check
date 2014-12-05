@@ -25,15 +25,12 @@ EOL-style of the committed code. Only Linux-style code is allowed.
 
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
-
-## Packaging and test execution
-Widely advertised Wired testing framework seems broken in Stash, according to
-STASH-5523 and STASH-4616. So, to execute tests correctly, you are to run
-atlas-debug -DskipTests
-And when the application starts, you cat perform the testing
-atlas-package
+* error occurs on pushing tags
 
 ## Version history
+
+### Version 0.3
+- Integration tests implemented. Theu are now performed automatically
 
 ### Version 0.2
 - Added ablility to switch on/off pull request merge check

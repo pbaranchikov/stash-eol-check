@@ -24,7 +24,7 @@
     <component-import key="builderFactory" interface="com.atlassian.stash.scm.git.GitCommandBuilderFactory"/>
     <component-import key="gitScmConfig" interface="com.atlassian.stash.scm.git.GitScmConfig"/>
     <component-import key="i18nService" interface="com.atlassian.stash.i18n.I18nService"/>
-    <repository-hook name="Check end-of-line" key="check-eol-hook" class="com.pbaranchikov.stash.checks.EolCheckHook">
+    <repository-hook name="Check end-of-line" key="stash-check-eol-hook" class="com.pbaranchikov.stash.checks.EolCheckHook">
         <config-form name="Simple Hook Config" key="simpleHook-config">
              <view>com.pbaranchikov.stash.eol.check.formContents</view>
              <directory location="/soy/"/>

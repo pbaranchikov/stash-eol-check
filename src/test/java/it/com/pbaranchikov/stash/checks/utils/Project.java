@@ -1,4 +1,4 @@
-package ut.com.pbaranchikov.stash.checks.utils;
+package it.com.pbaranchikov.stash.checks.utils;
 
 /**
  * Interface for projects in Stash.

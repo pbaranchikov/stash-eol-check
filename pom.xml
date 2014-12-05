@@ -118,6 +118,12 @@
             <artifactId>commons-compress</artifactId>
             <version>1.8</version>
         </dependency>
+        <dependency>
+            <groupId>com.atlassian.upm</groupId>
+            <artifactId>upm-api</artifactId>
+            <version>2.1.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -134,6 +140,10 @@
                             <instanceId>stash</instanceId>
                             <version>${stash.version}</version>
                             <dataVersion>${stash.data.version}</dataVersion>
+                            <systemPropertyVariables>
+                                <!-- Force Stash to start up synchronously -->
+                                <johnson.spring.lifecycle.synchronousStartup>true</johnson.spring.lifecycle.synchronousStartup>
+                            </systemPropertyVariables>
                         </product>
                     </products>
                 </configuration>
@@ -181,8 +191,8 @@
     </reporting>
 
     <properties>
-        <stash.version>3.4.1</stash.version>
-        <stash.data.version>3.4.1</stash.data.version>
+        <stash.version>3.5.0</stash.version>
+        <stash.data.version>3.5.0</stash.data.version>
         <amps.version>5.0.4</amps.version>
         <plugin.testrunner.version>1.2.0</plugin.testrunner.version>
     </properties>
