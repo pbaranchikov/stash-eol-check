@@ -25,12 +25,13 @@ EOL-style of the committed code. Only Linux-style code is allowed.
 
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
-* error occurs on pushing tags
+* error occurs on pushing tags (could not reproduce within JUnit - so
+  need to keep an eye on it)
 
 ## Version history
 
 ### Version 0.3
-- Integration tests implemented. Theu are now performed automatically
+- Integration tests implemented. They are now performed automatically
 
 ### Version 0.2
 - Added ablility to switch on/off pull request merge check

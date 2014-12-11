@@ -26,13 +26,23 @@ public interface Workspace {
 
     boolean push(String branchName);
 
+    /**
+     * Performs push --force to the target branch from the current branch.
+     * @param targetBranch branch to force push to
+     * @return true on success
+     */
+    boolean pushForce(String targetBranch);
+
     boolean pushRemoval(String branchname);
 
     File getWorkDir();
 
     void commitNewContents(File targetFile, String newContents);
 
-    boolean createTag(String tagName);
+    /**
+     * Method creates tag. Locally, not pushing it to the repository.
+     * @param tagName new tag name
+     */
+    void createTag(String tagName);
 
-    boolean removeTag(String tagName);
 }

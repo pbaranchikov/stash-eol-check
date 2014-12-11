@@ -54,6 +54,7 @@ public abstract class AbstractGitCheck {
     protected static final String GOOD_CONTENTS = "This\nis file with wrong contents\n";
     protected static final String GOOD_FILE = "goodFile";
     protected static final String BAD_FILE = "badFile";
+    protected static final String BRANCH_MASTER = "master";
 
     private static final String STASH_REST_PATH = "/rest/api/1.0";
     private static final String REST_PROJECTS = "/projects";
@@ -76,6 +77,7 @@ public abstract class AbstractGitCheck {
     private static final String GIT_PUSH = "push";
     private static final String GIT_ORIGIN = "origin";
     private static final String GIT = "git";
+    private static final String DEL_PREFIX = ":";
 
     private static final String EOL = "\n";
 
@@ -229,6 +231,14 @@ public abstract class AbstractGitCheck {
             throw new GitException("Error executing command " + Arrays.toString(cmdArray), e);
 
         }
+    }
+
+    protected File commitBad() {
+        return getWorkspace().commitNewFile("bad" + getNextFileName(), WRONG_CONTENTS);
+    }
+
+    protected File commitGood() {
+        return getWorkspace().commitNewFile("good" + getNextFileName(), GOOD_CONTENTS);
     }
 
     /**
@@ -468,8 +478,15 @@ public abstract class AbstractGitCheck {
         }
 
         @Override
+        public boolean pushForce(String targetBranch) {
+            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, "--force", GIT_ORIGIN,
+                    "HEAD:" + targetBranch);
+            return result.getExitCode() == 0;
+        }
+
+        @Override
         public boolean pushRemoval(String branchName) {
-            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN, ":"
+            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN, DEL_PREFIX
                     + branchName);
             return result.getExitCode() == 0;
         }
@@ -498,18 +515,8 @@ public abstract class AbstractGitCheck {
         }
 
         @Override
-        public boolean createTag(String tagName) {
+        public void createTag(String tagName) {
             executeCommand(GIT_TAG, tagName);
-            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN, tagName);
-            return result.getExitCode() == 0;
-        }
-
-        @Override
-        public boolean removeTag(String tagName) {
-            executeCommand(GIT_TAG, "-d", tagName);
-            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN,
-                    ":/refs/tags/" + tagName);
-            return result.getExitCode() == 0;
         }
 
     }
