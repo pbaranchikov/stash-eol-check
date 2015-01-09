@@ -49,10 +49,19 @@ public class RealParentResolver {
             return null;
         }
         final Changeset branch = commitService.getChangeset(repository, branches.iterator().next());
-        final Changeset newChangeset = commitService
-                .getChangeset(repository, refChange.getToHash());
+        final Changeset newChangeset = commitService.getChangeset(repository,
+                getLastCommit(repository, refChange));
         final Changeset base = mergeBaseResolver.findMergeBase(branch, newChangeset);
         return base.getId();
+    }
+
+    private String getLastCommit(Repository repository, RefChange refChange) {
+        final Collection<String> revlist = builderFactory.builder(repository).revList()
+                .rev(refChange.getToHash()).limit(1).build(new MultilineReader()).call();
+        if (revlist.size() != 1) {
+            throw new IllegalStateException("Number of revisions is " + revlist.size());
+        }
+        return revlist.iterator().next();
     }
 
     private Collection<String> getNearestBranches(Repository repository, RefChange refChange) {

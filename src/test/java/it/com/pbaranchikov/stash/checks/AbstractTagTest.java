@@ -7,16 +7,23 @@ import org.junit.Test;
  * Test for pushing and removing tags.
  * @author Pavel Baranchikov
  */
-public class TagTest extends AbstractGitCheck {
+public abstract class AbstractTagTest extends AbstractGitCheck {
 
     private static final String TAG_NAME = "new-tag";
+
+    /**
+     * Method should create tag from the current workspace for the current
+     * commit.
+     * @param tagName name for the tag
+     */
+    protected abstract void createTag(String tagName);
 
     @Test
     public void tagFromGoodBranch() {
         commitGood();
         Assert.assertTrue(getWorkspace().push());
         getRepository().enableHook();
-        getWorkspace().createTag(TAG_NAME);
+        createTag(TAG_NAME);
         Assert.assertTrue(getWorkspace().push(TAG_NAME));
     }
 
@@ -25,7 +32,7 @@ public class TagTest extends AbstractGitCheck {
         commitBad();
         Assert.assertTrue(getWorkspace().push());
         getRepository().enableHook();
-        getWorkspace().createTag(TAG_NAME);
+        createTag(TAG_NAME);
         Assert.assertTrue(getWorkspace().push(TAG_NAME));
     }
 
@@ -35,7 +42,7 @@ public class TagTest extends AbstractGitCheck {
         commitGood();
         Assert.assertTrue(getWorkspace().push());
         getRepository().enableHook();
-        getWorkspace().createTag(TAG_NAME);
+        createTag(TAG_NAME);
         Assert.assertTrue(getWorkspace().push(TAG_NAME));
     }
 
@@ -45,7 +52,7 @@ public class TagTest extends AbstractGitCheck {
         commitBad();
         Assert.assertTrue(getWorkspace().push());
         getRepository().enableHook();
-        getWorkspace().createTag(TAG_NAME);
+        createTag(TAG_NAME);
         Assert.assertTrue(getWorkspace().push(TAG_NAME));
     }
 
@@ -54,7 +61,7 @@ public class TagTest extends AbstractGitCheck {
         commitBad();
         commitBad();
         Assert.assertTrue(getWorkspace().push());
-        getWorkspace().createTag(TAG_NAME);
+        createTag(TAG_NAME);
         commitBad();
         Assert.assertTrue(getWorkspace().push());
         getRepository().enableHook();
@@ -67,7 +74,7 @@ public class TagTest extends AbstractGitCheck {
         commitBad();
         Assert.assertTrue(getWorkspace().push());
         getRepository().enableHook();
-        getWorkspace().createTag(TAG_NAME);
+        createTag(TAG_NAME);
         Assert.assertTrue(getWorkspace().push(TAG_NAME));
         Assert.assertTrue(getWorkspace().pushRemoval(TAG_NAME));
     }

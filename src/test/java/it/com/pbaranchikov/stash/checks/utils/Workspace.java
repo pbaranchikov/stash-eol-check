@@ -40,9 +40,16 @@ public interface Workspace {
     void commitNewContents(File targetFile, String newContents);
 
     /**
-     * Method creates tag. Locally, not pushing it to the repository.
+     * Method creates tag reference. Locally, not pushing it to the repository.
      * @param tagName new tag name
      */
     void createTag(String tagName);
+
+    /**
+     * Method creates tag object. Locally, not pushing it to the repository.
+     * @param tagName new tag name
+     * @param comment comment to the tag
+     */
+    void createTag(String tagName, String comment);
 
 }

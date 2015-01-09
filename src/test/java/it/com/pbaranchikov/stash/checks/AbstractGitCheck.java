@@ -76,6 +76,7 @@ public abstract class AbstractGitCheck {
     private static final String GIT_TAG = "tag";
     private static final String GIT_PUSH = "push";
     private static final String GIT_ORIGIN = "origin";
+    private static final String GIT_M = "-m";
     private static final String GIT = "git";
     private static final String DEL_PREFIX = ":";
 
@@ -452,7 +453,7 @@ public abstract class AbstractGitCheck {
         }
 
         public void commit(String message) {
-            executeCommand("commit", "-m", message);
+            executeCommand("commit", GIT_M, message);
         }
 
         @Override
@@ -465,16 +466,19 @@ public abstract class AbstractGitCheck {
             executeCommand(GIT_BRANCH, branchName);
         }
 
-        @Override
-        public boolean push() {
-            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH);
+        private boolean isSucceeded(String... parameters) {
+            final ExecutionResult result = executeGitCommandImpl(parameters);
             return result.getExitCode() == 0;
         }
 
         @Override
+        public boolean push() {
+            return isSucceeded(GIT_PUSH);
+        }
+
+        @Override
         public boolean push(String branchName) {
-            final ExecutionResult result = executeGitCommandImpl(GIT_PUSH, GIT_ORIGIN, branchName);
-            return result.getExitCode() == 0;
+            return isSucceeded(GIT_PUSH, GIT_ORIGIN, branchName);
         }
 
         @Override
@@ -517,6 +521,11 @@ public abstract class AbstractGitCheck {
         @Override
         public void createTag(String tagName) {
             executeCommand(GIT_TAG, tagName);
+        }
+
+        @Override
+        public void createTag(String tagName, String comment) {
+            executeCommand(GIT_TAG, tagName, GIT_M, comment);
         }
 
     }
