@@ -11,6 +11,9 @@ http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-W
 This plugin performs both pre-receive hook and merge-check for restricting
 EOL-style of the committed code. Only Linux-style code is allowed.
 
+Plugin is tested on Stash 3.2.0 - 3.5.1. Other versions may work, but
+not guaranteed.
+
 ## Settings of the hook/merge check
 
 * 'Allow inherited EOL-style' option provides an ability to perform some
@@ -25,13 +28,12 @@ EOL-style of the committed code. Only Linux-style code is allowed.
 
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
-* error occurs on pushing tags (could not reproduce within JUnit - so
-  need to keep an eye on it)
 
 ## Version history
 
 ### Version 0.3
 - Integration tests implemented. They are now performed automatically
+- Fixed #1: failure when pushing tags with comments
 
 ### Version 0.2
 - Added ablility to switch on/off pull request merge check
