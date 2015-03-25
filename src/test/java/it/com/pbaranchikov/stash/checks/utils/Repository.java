@@ -9,8 +9,6 @@ public interface Repository {
 
     String getCloneUrl();
 
-    String getUrl();
-
     void delete();
 
     void enableHook();

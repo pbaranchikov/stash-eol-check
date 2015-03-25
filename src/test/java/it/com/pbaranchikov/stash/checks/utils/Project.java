@@ -14,6 +14,4 @@ public interface Project {
     void delete();
 
     String getKey();
-
-    String getUrl();
 }

@@ -1,15 +1,25 @@
 package it.com.pbaranchikov.stash.checks;
 
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
+
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
 
 /**
  * Unit test for branching checks.
  * @author Pavel Baranchikov
  */
+@RunWith(AtlassianPluginsTestRunner.class)
 public class CreateBranchTest extends AbstractGitCheck {
 
     private static final String BRANCH_NAME = "newBranch";
+
+    public CreateBranchTest(WrappersFactory wrappersFactory) {
+        super(wrappersFactory);
+    }
 
     @Test
     public void testCreateNewClearBranchFromGood() throws Exception {

@@ -1,17 +1,27 @@
 package it.com.pbaranchikov.stash.checks;
 
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
 
 /**
  * Unit tests for <code>git push --force</code> checks.
  * @author Pavel Baranchikov
  */
+@RunWith(AtlassianPluginsTestRunner.class)
 public class PushForceTest extends AbstractGitCheck {
 
     private static final String TAG_GOOD = "goodRebaseTag";
     private static final String TAG_BAD = "badRebaseTag";
+
+    public PushForceTest(WrappersFactory wrappersFactory) {
+        super(wrappersFactory);
+    }
 
     @Before
     public void prepareVariousBranch() {

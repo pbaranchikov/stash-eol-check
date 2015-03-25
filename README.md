@@ -29,11 +29,23 @@ not guaranteed.
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
 
+## Development
+
+As of some errors in Maven dependency configuration, you need to install
+Oracle JDBC drivers into your local Maven repository. This is only needed
+by Stash Maven plugins to startup Stash instance for integration testing.
+```
+mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 \
+     -Dversion=11.2.0.2.0 -Dpackaging=jar -Dfile=${HOME}/download/ojdbc6.jar -DgeneratePom=true
+```
+Of course, you need to download ojdbc6.jar file preparatorily.
+
 ## Version history
 
 ### Version 0.4
 - Optimized hook performance by using more effective stream reading
 - Enabled Stash Datacenter support in plugin descriptor
+- Changed integration tests to use wired testing framework
 
 ### Version 0.3
 - Integration tests implemented. They are now performed automatically

@@ -1,5 +1,7 @@
 package it.com.pbaranchikov.stash.checks;
 
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.StringReader;
@@ -10,12 +12,20 @@ import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
 
 /**
  * Unit tests for regular commits.
  * @author Pavel Baranchikov
  */
+@RunWith(AtlassianPluginsTestRunner.class)
 public class RegularCommitsTest extends AbstractGitCheck {
+
+    public RegularCommitsTest(WrappersFactory wrappersFactory) {
+        super(wrappersFactory);
+    }
 
     @Test
     public void testSimpleBadFile() throws Exception {

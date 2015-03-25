@@ -1,6 +1,7 @@
 package it.com.pbaranchikov.stash.checks.efficiency;
 
 import it.com.pbaranchikov.stash.checks.AbstractGitCheck;
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -22,7 +23,11 @@ import org.junit.rules.TestName;
  */
 public abstract class AbstractEfficiencyMeasureTest extends AbstractGitCheck {
 
-     private static final int STRINGS_COUNT = 10000000;
+    private static final int STRINGS_COUNT = 10000000;
+
+    public AbstractEfficiencyMeasureTest(WrappersFactory wrappersFactory) {
+        super(wrappersFactory);
+    }
 
     @Rule
     public TestName name = new TestName();

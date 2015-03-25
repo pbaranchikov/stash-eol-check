@@ -1,19 +1,29 @@
 package it.com.pbaranchikov.stash.checks;
 
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
+
 import java.io.File;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
 
 /**
  * Tests for "inherit parent EOL style" functionality.
  * @author Pavel Baranchikov
  */
+@RunWith(AtlassianPluginsTestRunner.class)
 public class InheritedEolTest extends AbstractGitCheck {
 
     private File goodFile;
     private File badFile;
+
+    public InheritedEolTest(WrappersFactory wrappersFactory) {
+        super(wrappersFactory);
+    }
 
     @Before
     public void prepareParentCommits() throws Exception {

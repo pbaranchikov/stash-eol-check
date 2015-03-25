@@ -1,5 +1,7 @@
 package it.com.pbaranchikov.stash.checks;
 
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,6 +12,10 @@ import org.junit.Test;
 public abstract class AbstractTagTest extends AbstractGitCheck {
 
     private static final String TAG_NAME = "new-tag";
+
+    public AbstractTagTest(WrappersFactory wrappersFactory) {
+        super(wrappersFactory);
+    }
 
     /**
      * Method should create tag from the current workspace for the current

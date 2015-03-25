@@ -193,7 +193,7 @@
     <properties>
         <stash.version>3.5.1</stash.version>
         <stash.data.version>${stash.version}</stash.data.version>
-        <amps.version>5.0.4</amps.version>
+        <amps.version>5.0.16</amps.version>
         <plugin.testrunner.version>1.2.0</plugin.testrunner.version>
     </properties>
 
