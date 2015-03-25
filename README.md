@@ -33,6 +33,7 @@ not guaranteed.
 
 ### Version 0.4
 - Optimized hook performance by using more effective stream reading
+- Enabled Stash Datacenter support in plugin descriptor
 
 ### Version 0.3
 - Integration tests implemented. They are now performed automatically
