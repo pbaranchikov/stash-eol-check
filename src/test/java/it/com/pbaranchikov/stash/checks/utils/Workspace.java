@@ -14,6 +14,12 @@ public interface Workspace {
 
     void setCrlf(String crlf);
 
+    /**
+     * Method commits file without pushing it to server.
+     * @param filename file name to create and commit to the local repository
+     * @param contents file contents
+     * @return file object
+     */
     File commitNewFile(String filename, String contents);
 
     void checkout(String branchName);

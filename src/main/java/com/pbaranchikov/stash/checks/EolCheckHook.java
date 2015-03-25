@@ -10,6 +10,10 @@ import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.StopWatch;
+
 import com.atlassian.stash.commit.CommitService;
 import com.atlassian.stash.content.AbstractChangeCallback;
 import com.atlassian.stash.content.Change;
@@ -34,6 +38,7 @@ import com.atlassian.stash.scm.pull.MergeRequest;
 import com.atlassian.stash.setting.Settings;
 import com.atlassian.utils.process.ProcessException;
 import com.atlassian.utils.process.Watchdog;
+import com.google.common.base.Stopwatch;
 
 /**
  * Pre-receive hook and pull request check, enforcing the correct (Linux-like)
@@ -43,6 +48,7 @@ import com.atlassian.utils.process.Watchdog;
 public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRequestCheck {
 
     private static final char EOL = '\n';
+    private static final int BUFFER_SIZE = 1024;
     private static final String GIT_WHITESPACE_REFERENCE = "http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-Whitespace";
 
     private final CommitService commitService;
@@ -50,6 +56,7 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
     private final MergeBaseResolver mergeBaseResolver;
     private final RealParentResolver realParentResolver;
     private final I18nService i18service;
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     public EolCheckHook(CommitService commitService, GitCommandBuilderFactory builderFactory,
             MergeBaseResolver mergeBaseResolver, RealParentResolver realParentResolver,
@@ -153,17 +160,30 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
 
     private Collection<String> processChange(RepositoryHookContext context, RefChange refChange,
             Collection<Pattern> excludeFiles) {
+        final StopWatch stopwatch = new StopWatch("Processing changes hook");
+        stopwatch.start("getting real parent");
         final String fromId = realParentResolver.getRealParent(context.getRepository(), refChange);
+        stopwatch.stop();
+        stopwatch.start("local comps");
         final String toId = refChange.getToHash();
         // If sha are equal, no new commits a passed, so nothing to check.
         // if toId = 00..00, the branch is being deleted. Nothing to check.
         if (toId.equals(fromId) || (toId.equals(Constants.NON_ID))) {
             return Collections.emptyList();
         }
+        stopwatch.stop();
+        stopwatch.start("getting changedPaths");
         final Collection<String> changedPaths = getChangedPaths(context.getRepository(), fromId,
                 toId, excludeFiles);
-        return checkForWrongEol(changedPaths, context.getRepository(), fromId, toId,
-                context.getSettings());
+        stopwatch.stop();
+        stopwatch.start("performing main check");
+        final Collection<String> result = checkForWrongEol(changedPaths, context.getRepository(),
+                fromId, toId, context.getSettings());
+        stopwatch.stop();
+        if (log.isDebugEnabled()) {
+            log.debug(stopwatch.prettyPrint());
+        }
+        return result;
     }
 
     private Collection<String> checkForWrongEol(Collection<String> changedPaths, Repository repo,
@@ -247,20 +267,28 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
     private abstract static class AbstractEolHandler implements CommandOutputHandler<Boolean> {
 
         private boolean allOk = true;
+        private final Logger log = LoggerFactory.getLogger(getClass());
 
         @Override
         public void process(InputStream output) throws ProcessException {
+            final Stopwatch streamRead = new Stopwatch();
+            final Stopwatch work = new Stopwatch();
             try {
                 boolean newLine = true;
                 DiffSegmentType segmentType = DiffSegmentType.CONTEXT;
-                final byte[] buffer = new byte[1024];
+                final byte[] buffer = new byte[BUFFER_SIZE];
                 // Just initial value for while cycle
                 int readCount = 1;
                 while (readCount >= 0) {
+                    streamRead.start();
                     readCount = output.read(buffer);
+                    streamRead.stop();
+                    work.start();
                     for (int i = 0; i < readCount; i++) {
                         final byte nextChar = buffer[i];
-                        if (newLine) {
+                        final boolean nextCharIsNewline = nextChar == Constants.CR
+                                || nextChar == Constants.LF;
+                        if (newLine && !nextCharIsNewline) {
                             if (nextChar == '+') {
                                 segmentType = DiffSegmentType.ADDED;
                             } else if (nextChar == '-') {
@@ -269,16 +297,19 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
                                 segmentType = DiffSegmentType.CONTEXT;
                             }
                         }
-                        newLine = nextChar == Constants.CR || nextChar == Constants.LF;
                         // Catch only newline characters to reduce method calls
-                        if (newLine && !process(segmentType, nextChar)) {
+                        if (nextCharIsNewline && !process(segmentType, nextChar)) {
                             break;
                         }
+                        newLine = nextCharIsNewline;
                     }
+                    work.stop();
                 }
             } catch (IOException e) {
                 throw new ProcessException("Error reading data from diff file", e);
             }
+            log.debug("Stream read time {}", streamRead);
+            log.debug("Stream processing time {}", work);
         }
 
         /**

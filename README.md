@@ -11,7 +11,7 @@ http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-W
 This plugin performs both pre-receive hook and merge-check for restricting
 EOL-style of the committed code. Only Linux-style code is allowed.
 
-Plugin is tested on Stash 3.2.0 - 3.5.1. Other versions may work, but
+Plugin is tested on Stash 3.0.0 - 3.7.1. Other versions may work, but
 not guaranteed.
 
 ## Settings of the hook/merge check
@@ -30,6 +30,9 @@ not guaranteed.
 * only last commit is analyzed in pre-receive hook during the initial push
 
 ## Version history
+
+### Version 0.4
+- Optimized hook performance by using more effective stream reading
 
 ### Version 0.3
 - Integration tests implemented. They are now performed automatically
