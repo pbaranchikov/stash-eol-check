@@ -16,4 +16,12 @@ public interface Repository {
     void disableHook();
 
     void setHookSettings(String excludedFiles, boolean allowInherited);
+
+    /**
+     * Creates a repository fork in user's namespace.
+     * @return new forked repository
+     */
+    Repository fork();
+
+    boolean tryCreatePullRequest(Repository targetRepository, String branchName);
 }

@@ -43,6 +43,11 @@ public interface Workspace {
 
     File getWorkDir();
 
+    /**
+     * Methoc commits new contents to existing file.
+     * @param targetFile file to change contents of
+     * @param newContents new contents for the file
+     */
     void commitNewContents(File targetFile, String newContents);
 
     /**

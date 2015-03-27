@@ -2,7 +2,6 @@ package it.com.pbaranchikov.stash.checks;
 
 import java.io.File;
 
-import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 
@@ -52,15 +51,7 @@ public abstract class AbstractGitCheck {
 
     @After
     public void sweepWorkspace() throws Exception {
-        if (repository != null) {
-            repository.delete();
-        }
-        if (project != null) {
-            project.delete();
-        }
-        if (workspace != null) {
-            FileUtils.forceDelete(workspace.getWorkDir());
-        }
+        wrappersFactory.cleanup();
     }
 
     protected Project createProject(String projectKey) {

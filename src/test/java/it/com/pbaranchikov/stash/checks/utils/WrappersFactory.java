@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -13,7 +16,11 @@ import org.apache.commons.lang.ArrayUtils;
 import com.atlassian.stash.hook.repository.RepositoryHookService;
 import com.atlassian.stash.project.ProjectCreateRequest;
 import com.atlassian.stash.project.ProjectService;
+import com.atlassian.stash.pull.PullRequest;
+import com.atlassian.stash.pull.PullRequestMergeability;
+import com.atlassian.stash.pull.PullRequestService;
 import com.atlassian.stash.repository.RepositoryCreateRequest;
+import com.atlassian.stash.repository.RepositoryForkRequest;
 import com.atlassian.stash.repository.RepositoryService;
 import com.atlassian.stash.server.ApplicationPropertiesService;
 import com.atlassian.stash.setting.Settings;
@@ -48,16 +55,23 @@ public class WrappersFactory {
     private final RepositoryHookService repositoryHookService;
     // private final SecurityService securityService;
     private final EscalatedSecurityContext securityContext;
+    private final PullRequestService pullRequestService;
 
     private final URL stashUrl;
+
+    private final Collection<Repository> createdRepositories = new ArrayList<>();
+    private final Collection<Project> createdProjects = new ArrayList<>();
+    private final Collection<Workspace> createdWorkspaces = new ArrayList<>();
 
     public WrappersFactory(ProjectService projectService, RepositoryService repositoryService,
             RepositoryHookService repositoryHookService,
             ApplicationPropertiesService applicationPropertiesService,
-            SecurityService securityService, UserService userService) {
+            SecurityService securityService, UserService userService,
+            PullRequestService pullRequestService) {
         this.projectService = projectService;
         this.repositoryService = repositoryService;
         this.repositoryHookService = repositoryHookService;
+        this.pullRequestService = pullRequestService;
 
         final StashUser adminUser = userService.getUserByName(STASH_USER);
         this.securityContext = securityService.impersonating(adminUser, "tests running");
@@ -66,6 +80,24 @@ public class WrappersFactory {
             stashUrl = applicationPropertiesService.getBaseUrl().toURL();
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Deletes all the created repositories, projects and workspaces.
+     * @throws IOException on workspace delete errors
+     */
+    public void cleanup() throws IOException {
+        for (Repository repository : createdRepositories) {
+            repository.delete();
+        }
+        for (Project project : createdProjects) {
+            project.delete();
+        }
+        for (Workspace workspace : createdWorkspaces) {
+            if (workspace.getWorkDir().exists()) {
+                FileUtils.forceDelete(workspace.getWorkDir());
+            }
         }
     }
 
@@ -115,6 +147,7 @@ public class WrappersFactory {
 
         public ProjectImpl(com.atlassian.stash.project.Project project) {
             this.project = project;
+            createdProjects.add(this);
         }
 
         @Override
@@ -183,6 +216,7 @@ public class WrappersFactory {
 
         public WiredRepository(com.atlassian.stash.repository.Repository repository) {
             this.repository = repository;
+            createdRepositories.add(this);
         }
 
         @Override
@@ -249,6 +283,40 @@ public class WrappersFactory {
                 }
             });
         }
+
+        @Override
+        public Repository fork() {
+            final RepositoryForkRequest request = new RepositoryForkRequest.Builder().parent(
+                    repository).build();
+            return securityContext.call(new Operation<Repository, RuntimeException>() {
+                @Override
+                public Repository perform() throws RuntimeException {
+                    return new WiredRepository(repositoryService.fork(request));
+                }
+            });
+        }
+
+        @Override
+        public boolean tryCreatePullRequest(final Repository targetRepository,
+                final String branchName) {
+            final WiredRepository targetWiredRepository = (WiredRepository) targetRepository;
+            final boolean canMerge = securityContext
+                    .call(new Operation<Boolean, RuntimeException>() {
+                        @Override
+                        public Boolean perform() throws RuntimeException {
+                            final PullRequest pullRequest = pullRequestService.create(
+                                    "pull-request-n",
+                                    "New pull request from repo " + repository.getName(),
+                                    Collections.<String>emptySet(), repository, branchName,
+                                    targetWiredRepository.repository, branchName);
+                            final PullRequestMergeability mergeability = pullRequestService
+                                    .canMerge(targetWiredRepository.repository.getId(),
+                                            pullRequest.getId());
+                            return mergeability.canMerge();
+                        }
+                    });
+            return canMerge;
+        }
     }
 
     /**
@@ -260,6 +328,7 @@ public class WrappersFactory {
 
         public WorkspaceImpl(File workspaceDir) {
             this.workspaceDir = workspaceDir;
+            createdWorkspaces.add(this);
         }
 
         private ExecutionResult executeGitCommandImpl(String... parameters) {
