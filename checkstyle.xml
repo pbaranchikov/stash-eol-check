@@ -106,11 +106,9 @@
         <module name="NoWhitespaceBefore"/>
         <module name="NoWhitespaceAfter"/>
         <module name="MethodParamPad"/>
-        <!--
         <module name="EmptyLineSeparator">
             <property name="allowNoEmptyLineBetweenFields" value="true"/>
         </module>
-        -->
 
         <!-- Modifier Checks                                    -->
         <!-- See http://checkstyle.sf.net/config_modifiers.html -->
@@ -119,9 +117,7 @@
 
         <!-- Checks for blocks. You know, those {}'s         -->
         <!-- See http://checkstyle.sf.net/config_blocks.html -->
-        <!--
         <module name="AvoidNestedBlocks"/>
-        -->
         <module name="LeftCurly">
             <property name="maxLineLength" value="150"/>
         </module>
@@ -140,9 +136,6 @@
             <property name="max" value="2"/>
         </module>
 
-        <module name="RedundantThrows">
-            <property name="suppressLoadErrors" value="true"/>
-        </module>
         <module name="HideUtilityClassConstructor"/>
 
         <module name="CyclomaticComplexity">
@@ -176,14 +169,18 @@
         <module name="ArrayTypeStyle"/>
 
         <module name="DefaultComesLast"/>
-        <module name="IllegalThrows"/>
+        <module name="IllegalThrows">
+            <property name="ignoredMethodNames" value="perform"/>
+            <!--
+            TODO remote ingnored method with the overriden method exclusion
+            <property name="ignoreOverriddenMethods" value="true"/>
+            -->
+        </module>
 
         <module name="OuterTypeFilename"/>
 
         <module name="ClassTypeParameterName"/>
-        <!--
         <module name="InterfaceTypeParameterName"/>
-        -->
         <module name="ConstantName"/>
         <module name="LocalFinalVariableName"/>
         <module name="LocalVariableName"/>
@@ -194,10 +191,8 @@
         <module name="ParameterName"/>
         <module name="StaticVariableName"/>
         <module name="TypeName"/>
-        <!--
         <module name="NoLineWrapCheck"/>
         <module name="VariableDeclarationUsageDistance"/>
-        -->
 
     </module>
 

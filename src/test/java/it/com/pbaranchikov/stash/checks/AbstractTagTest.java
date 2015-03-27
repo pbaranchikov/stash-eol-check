@@ -1,9 +1,9 @@
 package it.com.pbaranchikov.stash.checks;
 
-import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 /**
  * Test for pushing and removing tags.

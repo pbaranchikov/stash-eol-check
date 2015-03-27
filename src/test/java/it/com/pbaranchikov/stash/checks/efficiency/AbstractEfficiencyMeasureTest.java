@@ -1,19 +1,18 @@
 package it.com.pbaranchikov.stash.checks.efficiency;
 
-import it.com.pbaranchikov.stash.checks.AbstractGitCheck;
-import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import it.com.pbaranchikov.stash.checks.AbstractGitCheck;
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 /**
  * Class to perform efficiency measuring of the hook. All the tests here are
@@ -25,12 +24,13 @@ public abstract class AbstractEfficiencyMeasureTest extends AbstractGitCheck {
 
     private static final int STRINGS_COUNT = 10000000;
 
+    @Rule
+    private TestName name = new TestName();
+
     public AbstractEfficiencyMeasureTest(WrappersFactory wrappersFactory) {
         super(wrappersFactory);
     }
 
-    @Rule
-    public TestName name = new TestName();
 
     @Before
     public void init() {

@@ -1,10 +1,10 @@
 package it.com.pbaranchikov.stash.checks;
 
-import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
-
 import org.junit.runner.RunWith;
 
 import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
+
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 /**
  * Unit test for tag objects, i.e. tags with comments.

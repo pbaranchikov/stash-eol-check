@@ -120,7 +120,7 @@ public class WrappersFactory {
         @Override
         public Repository createRepository(String name) {
             final RepositoryCreateRequest request = new RepositoryCreateRequest.Builder()
-                    .project(project).name(name).scmId("git").build();
+                    .project(project).name(name).scmId(GIT).build();
             final Repository repository = securityContext
                     .call(new Operation<Repository, RuntimeException>() {
                         @Override

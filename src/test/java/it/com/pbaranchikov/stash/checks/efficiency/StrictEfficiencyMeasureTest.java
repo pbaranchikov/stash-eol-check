@@ -1,12 +1,12 @@
 package it.com.pbaranchikov.stash.checks.efficiency;
 
-import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
+
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 /**
  * Efficiency measuring test for strict EOL-style checks.

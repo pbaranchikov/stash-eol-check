@@ -1,12 +1,12 @@
 package it.com.pbaranchikov.stash.checks;
 
-import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
+
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 /**
  * Unit test for branching checks.

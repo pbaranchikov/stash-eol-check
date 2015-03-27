@@ -1,15 +1,15 @@
 package it.com.pbaranchikov.stash.checks;
 
-import it.com.pbaranchikov.stash.checks.utils.Project;
-import it.com.pbaranchikov.stash.checks.utils.Repository;
-import it.com.pbaranchikov.stash.checks.utils.Workspace;
-import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
-
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+
+import it.com.pbaranchikov.stash.checks.utils.Project;
+import it.com.pbaranchikov.stash.checks.utils.Repository;
+import it.com.pbaranchikov.stash.checks.utils.Workspace;
+import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 /**
  * Abstract suitcase for git work copies.<br/>
