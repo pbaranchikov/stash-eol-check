@@ -28,6 +28,8 @@ not guaranteed.
 
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
+### Build isues
+* integration tests are not working for Stash 3.8.x and above.
 
 ## Development
 
@@ -41,6 +43,9 @@ mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 \
 Of course, you need to download ojdbc6.jar file preparatorily.
 
 ## Version history
+
+### Version 0.5
+- Fixed exception, thrown when a file matched multiple exclusion patterns
 
 ### Version 0.4
 - Optimized hook performance by using more effective stream reading
