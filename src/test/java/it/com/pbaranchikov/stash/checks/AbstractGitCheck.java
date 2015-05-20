@@ -66,8 +66,12 @@ public abstract class AbstractGitCheck {
         return repository;
     }
 
+    protected int getNextFileNumber() {
+        return fileCounter++;
+    }
+
     protected String getNextFileName() {
-        return RANDOM_FILE + (fileCounter++);
+        return RANDOM_FILE + getNextFileNumber();
     }
 
     protected File commitBad() {
