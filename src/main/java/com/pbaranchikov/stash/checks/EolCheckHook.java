@@ -233,6 +233,7 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
             for (Pattern pattern : excludeFiles) {
                 if (pattern.matcher(filename).matches()) {
                     iter.remove();
+                    break;
                 }
             }
         }
