@@ -47,6 +47,8 @@ Of course, you need to download ojdbc6.jar file preparatorily.
 
 ### Version 0.6
 - Converted plug-in to Bitbucket server API
+- Cleaned out Maven dependencies
+- Removed Eclipse project and classpath files
 
 ### Version 0.5
 - Fixed exception, thrown when a file matched multiple exclusion patterns

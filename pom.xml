@@ -37,6 +37,7 @@
                 <groupId>com.atlassian.plugins</groupId>
                 <artifactId>atlassian-plugins-osgi-testrunner-parent</artifactId>
                 <version>${plugin.testrunner.version}</version>
+                <type>pom</type>
                 <scope>import</scope>
             </dependency>
         </dependencies>
@@ -96,23 +97,16 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
             <version>1.10.8</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>1.8</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.atlassian.upm</groupId>
@@ -170,9 +164,9 @@
                         <configuration>
                             <configLocation>checkstyle.xml</configLocation>
                             <encoding>UTF-8</encoding>
-                            <consoleOutput>true</consoleOutput>
                             <failsOnError>true</failsOnError>
                             <linkXRef>false</linkXRef>
+                            <consoleOutput>true</consoleOutput>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
                         </configuration>
                         <goals>
