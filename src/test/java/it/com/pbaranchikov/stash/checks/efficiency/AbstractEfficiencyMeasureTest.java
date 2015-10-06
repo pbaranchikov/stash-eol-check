@@ -31,7 +31,6 @@ public abstract class AbstractEfficiencyMeasureTest extends AbstractGitCheck {
         super(wrappersFactory);
     }
 
-
     @Before
     public void init() {
         getWorkspace().commitNewFile(getNextFileName(), GOOD_CONTENTS);

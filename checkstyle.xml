@@ -8,17 +8,17 @@
     <!-- Checks for whitespace                               -->
     <!-- See http://checkstyle.sf.net/config_whitespace.html -->
     <module name="FileTabCharacter">
-        <property name="fileExtensions" value="java, xml, xslt, cpp, c, h, groovy"/>
+        <property name="fileExtensions" value="java, xml, properties, css, soy, js"/>
     </module>
     <module name="NewlineAtEndOfFile">
-        <property name="fileExtensions" value="java, xml, sql, properties, css, cpp, c, h, groovy"/>
+        <property name="fileExtensions" value="java, xml, properties, css, soy, js"/>
     </module>
 
     <module name="RegexpSingleline">
         <!-- \s matches whitespace character, $ matches end of line. -->
         <property name="message" value="Line has trailing whitespace"/>
         <property name="format" value="\s+$"/>
-        <property name="fileExtensions" value="java, xml, sql, css, cpp, c, h, groovy"/>
+        <property name="fileExtensions" value="java, xml, properties, css, soy, js"/>
     </module>
 
     <module name="RegexpSingleline">
@@ -57,9 +57,14 @@
             <property name="allowMissingPropertyJavadoc" value="true"/>
         </module>
         <module name="JavadocType"/>
+        <module name="JavadocVariable">
+            <property name="scope" value="public"/>
+        </module>
         <module name="JavadocStyle">
             <property name="checkEmptyJavadoc" value="true"/>
         </module>
+        <module name="JavadocTagContinuationIndentation"/>
+        <module name="AtclauseOrder"/>
 
         <!-- Checks for Naming Conventions.                  -->
         <!-- See http://checkstyle.sf.net/config_naming.html -->
@@ -108,6 +113,7 @@
         <module name="MethodParamPad"/>
         <module name="EmptyLineSeparator">
             <property name="allowNoEmptyLineBetweenFields" value="true"/>
+            <property name="allowMultipleEmptyLines" value="false"/>
         </module>
 
         <!-- Modifier Checks                                    -->
@@ -172,11 +178,7 @@
 
         <module name="DefaultComesLast"/>
         <module name="IllegalThrows">
-            <property name="ignoredMethodNames" value="perform"/>
-            <!--
-            TODO remote ingnored method with the overriden method exclusion
             <property name="ignoreOverriddenMethods" value="true"/>
-            -->
         </module>
 
         <module name="OuterTypeFilename"/>

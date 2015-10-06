@@ -154,7 +154,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>6.11</version>
+                        <version>6.11.2</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -164,10 +164,11 @@
                         <configuration>
                             <configLocation>checkstyle.xml</configLocation>
                             <encoding>UTF-8</encoding>
+                            <consoleOutput>true</consoleOutput>
                             <failsOnError>true</failsOnError>
                             <linkXRef>false</linkXRef>
-                            <consoleOutput>true</consoleOutput>
-                            <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                            <sourceDirectory>${basedir}</sourceDirectory>
+                            <includes>src/**,*.xml,*.md</includes>
                         </configuration>
                         <goals>
                             <goal>check</goal>

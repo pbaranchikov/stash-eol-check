@@ -30,6 +30,9 @@ public abstract class AbstractGitCheck {
 
     private static final String RANDOM_FILE = "randomFile";
 
+    /**
+     * Rule to hold currently executed test name.
+     */
     @Rule
     public TestName testName = new TestName();
 
