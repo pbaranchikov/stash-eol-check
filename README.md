@@ -43,6 +43,12 @@ mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 \
 ```
 Of course, you need to download ojdbc6.jar file preparatorily.
 
+Next trick is to fix JUnit 4.12 broken compatibility. You need to build your own
+osgi-testrunner package with pull request junit-412-compatibility applied. You can
+find it by the following link:
+
+https://bitbucket.org/atlassian/atlassian-plugins-osgi-testrunner-parent/pull-requests/12/junit-412-compatibility
+
 ## Version history
 
 ### Version 0.6
