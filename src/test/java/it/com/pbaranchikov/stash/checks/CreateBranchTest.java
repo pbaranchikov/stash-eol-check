@@ -4,15 +4,13 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
-
 import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 /**
  * Unit test for branching checks.
  * @author Pavel Baranchikov
  */
-@RunWith(AtlassianPluginsTestRunner.class)
+@RunWith(com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner.class)
 public class CreateBranchTest extends AbstractGitCheck {
 
     private static final String BRANCH_NAME = "newBranch";

@@ -10,10 +10,9 @@
         /** supply the previous value to the text field so the user can see the saved data */
         {param value: $config['excludeFiles'] /}
         {param labelContent}
-            {stash_i18n('stash.check.eol.excludeFiles', 'Exclude files')}
+            {getText('stash.check.eol.excludeFiles')}
         {/param}
-        {param descriptionText: stash_i18n('stash.check.eol.excludeFiles.description',
-            'Files, that should not be checked for EOL - comma separated list of regexps') /}
+        {param descriptionText: getText('stash.check.eol.excludeFiles.description') /}
         {param extraClasses: 'long' /}
         /** if validation returned errors then display them in the error text. */
         {param errorTexts: $errors ? $errors['excludeFiles'] : null /}
@@ -21,13 +20,12 @@
 
 
     {call aui.form.checkboxField}
-        {param legendContent: stash_i18n('stash.check.eol.allow.inherited.eol', 'Inherited EOL-style') /}
+        {param legendContent: getText('stash.check.eol.allow.inherited.eol') /}
         {param fields: [[
             'id': 'allowInheritedEol',
-            'labelText': stash_i18n('stash.check.eol.allow.inherited.eol.allow', 'Allow inherited EOL-style'),
+            'labelText': getText('stash.check.eol.allow.inherited.eol.allow'),
             'isChecked': $config['allowInheritedEol']
             ]] /}
-        {param descriptionText: stash_i18n('stash.check.eol.allow.inherited.eol.description',
-            'Select to allow commit of wrong EOL-style for files, that are already committed with wrong EOL-style') /}
+        {param descriptionText: getText('stash.check.eol.allow.inherited.eol.description') /}
     {/call}
 {/template}

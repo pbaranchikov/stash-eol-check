@@ -2,8 +2,11 @@ package it.com.pbaranchikov.stash.checks;
 
 import java.io.File;
 
+import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
 
 import it.com.pbaranchikov.stash.checks.utils.Project;
 import it.com.pbaranchikov.stash.checks.utils.Repository;
@@ -27,12 +30,16 @@ public abstract class AbstractGitCheck {
 
     private static final String RANDOM_FILE = "randomFile";
 
+    @Rule
+    public TestName testName = new TestName();
+
     private Repository repository;
     private Project project;
     private Workspace workspace;
     private int fileCounter;
 
     private final WrappersFactory wrappersFactory;
+    private final Logger logger = Logger.getLogger(getClass());
 
     protected AbstractGitCheck(WrappersFactory wrappersFactory) {
         this.wrappersFactory = wrappersFactory;
@@ -40,6 +47,7 @@ public abstract class AbstractGitCheck {
 
     @Before
     public void createInitialConfig() throws Exception {
+        logger.debug("Creating initial configuration for test " + testName.getMethodName());
         fileCounter = 0;
         project = createProject(PROJECT_KEY);
         repository = project.forceCreateRepository(REPOSITORY_KEY);
@@ -51,6 +59,7 @@ public abstract class AbstractGitCheck {
 
     @After
     public void sweepWorkspace() throws Exception {
+        logger.debug("Sweeping garbage for test " + testName.getMethodName());
         wrappersFactory.cleanup();
     }
 

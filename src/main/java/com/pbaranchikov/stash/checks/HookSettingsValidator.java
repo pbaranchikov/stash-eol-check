@@ -1,16 +1,16 @@
 package com.pbaranchikov.stash.checks;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import com.atlassian.stash.i18n.I18nService;
-import com.atlassian.stash.repository.Repository;
-import com.atlassian.stash.setting.RepositorySettingsValidator;
-import com.atlassian.stash.setting.Settings;
-import com.atlassian.stash.setting.SettingsValidationErrors;
-import com.google.common.collect.Maps;
+import com.atlassian.bitbucket.i18n.I18nService;
+import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.bitbucket.setting.RepositorySettingsValidator;
+import com.atlassian.bitbucket.setting.Settings;
+import com.atlassian.bitbucket.setting.SettingsValidationErrors;
 
 /**
  * Validator for hook settings.
@@ -35,7 +35,7 @@ public class HookSettingsValidator implements RepositorySettingsValidator {
             return;
         }
         final String[] excludedFiles = excludedString.split(Constants.PATTERNS_SEPARATOR);
-        final Map<String, String> wrongPatterns = Maps.newHashMap();
+        final Map<String, String> wrongPatterns = new HashMap<>();
         for (String patternString : excludedFiles) {
             try {
                 Pattern.compile(patternString);

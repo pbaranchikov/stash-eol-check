@@ -4,9 +4,9 @@ import java.io.IOException;
 
 import javax.annotation.Nullable;
 
-import com.atlassian.stash.io.LineReader;
-import com.atlassian.stash.io.LineReaderOutputHandler;
-import com.atlassian.stash.scm.CommandOutputHandler;
+import com.atlassian.bitbucket.io.LineReader;
+import com.atlassian.bitbucket.io.LineReaderOutputHandler;
+import com.atlassian.bitbucket.scm.CommandOutputHandler;
 
 /**
  * Returns the first line of output provided by the git process.

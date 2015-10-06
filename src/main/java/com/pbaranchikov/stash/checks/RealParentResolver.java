@@ -5,14 +5,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-import com.atlassian.stash.commit.CommitService;
-import com.atlassian.stash.content.Changeset;
-import com.atlassian.stash.io.LineReader;
-import com.atlassian.stash.io.LineReaderOutputHandler;
-import com.atlassian.stash.repository.RefChange;
-import com.atlassian.stash.repository.Repository;
-import com.atlassian.stash.scm.CommandOutputHandler;
-import com.atlassian.stash.scm.git.GitCommandBuilderFactory;
+import com.atlassian.bitbucket.commit.Commit;
+import com.atlassian.bitbucket.commit.CommitRequest;
+import com.atlassian.bitbucket.commit.CommitService;
+import com.atlassian.bitbucket.io.LineReader;
+import com.atlassian.bitbucket.io.LineReaderOutputHandler;
+import com.atlassian.bitbucket.repository.RefChange;
+import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.bitbucket.scm.CommandOutputHandler;
+import com.atlassian.bitbucket.scm.git.command.GitCommandBuilderFactory;
 
 /**
  * Helper class to resolve the real parent of the commit. Real parent is a
@@ -48,11 +49,16 @@ public class RealParentResolver {
         if (branches.isEmpty()) {
             return null;
         }
-        final Changeset branch = commitService.getChangeset(repository, branches.iterator().next());
-        final Changeset newChangeset = commitService.getChangeset(repository,
-                getLastCommit(repository, refChange));
-        final Changeset base = mergeBaseResolver.findMergeBase(branch, newChangeset);
+        final Commit branch = getCommitById(repository, branches.iterator().next());
+        final Commit newChangeset = getCommitById(repository, refChange.getToHash());
+        final Commit base = mergeBaseResolver.findMergeBase(branch, newChangeset);
         return base.getId();
+    }
+
+    private Commit getCommitById(Repository repository, String commitId) {
+        final CommitRequest.Builder builder = new CommitRequest.Builder(repository, commitId);
+        final CommitRequest request = builder.build();
+        return commitService.getCommit(request);
     }
 
     private String getLastCommit(Repository repository, RefChange refChange) {
@@ -64,6 +70,13 @@ public class RealParentResolver {
         return revlist.iterator().next();
     }
 
+    /**
+     * Return branches, that have the latest common commit with the specified
+     * head.
+     * @param repository repository to look at
+     * @param refChange head to look branches
+     * @return collection of branch names
+     */
     private Collection<String> getNearestBranches(Repository repository, RefChange refChange) {
         final Collection<String> revlist = builderFactory.builder(repository).revList()
                 .rev(refChange.getToHash()).build(new MultilineReader()).call();
@@ -86,7 +99,7 @@ public class RealParentResolver {
 
         private final Collection<String> parents = new ArrayList<String>();
 
-        public MultilineReader() {
+        MultilineReader() {
             super("UTF-8");
         }
 

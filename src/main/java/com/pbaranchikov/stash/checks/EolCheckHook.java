@@ -14,28 +14,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StopWatch;
 
-import com.atlassian.stash.commit.CommitService;
-import com.atlassian.stash.content.AbstractChangeCallback;
-import com.atlassian.stash.content.Change;
-import com.atlassian.stash.content.ChangesRequest;
-import com.atlassian.stash.content.Changeset;
-import com.atlassian.stash.content.DiffSegmentType;
-import com.atlassian.stash.hook.HookResponse;
-import com.atlassian.stash.hook.repository.PreReceiveRepositoryHook;
-import com.atlassian.stash.hook.repository.RepositoryHookContext;
-import com.atlassian.stash.hook.repository.RepositoryMergeRequestCheck;
-import com.atlassian.stash.hook.repository.RepositoryMergeRequestCheckContext;
-import com.atlassian.stash.i18n.I18nService;
-import com.atlassian.stash.pull.PullRequest;
-import com.atlassian.stash.pull.PullRequestRef;
-import com.atlassian.stash.repository.RefChange;
-import com.atlassian.stash.repository.Repository;
-import com.atlassian.stash.scm.CommandOutputHandler;
-import com.atlassian.stash.scm.git.GitCommand;
-import com.atlassian.stash.scm.git.GitCommandBuilderFactory;
-import com.atlassian.stash.scm.git.diff.GitDiffBuilder;
-import com.atlassian.stash.scm.pull.MergeRequest;
-import com.atlassian.stash.setting.Settings;
+import com.atlassian.bitbucket.commit.Commit;
+import com.atlassian.bitbucket.commit.CommitRequest;
+import com.atlassian.bitbucket.commit.CommitService;
+import com.atlassian.bitbucket.content.AbstractChangeCallback;
+import com.atlassian.bitbucket.content.Change;
+import com.atlassian.bitbucket.content.ChangesRequest;
+import com.atlassian.bitbucket.content.DiffSegmentType;
+import com.atlassian.bitbucket.hook.HookResponse;
+import com.atlassian.bitbucket.hook.repository.PreReceiveRepositoryHook;
+import com.atlassian.bitbucket.hook.repository.RepositoryHookContext;
+import com.atlassian.bitbucket.hook.repository.RepositoryMergeRequestCheck;
+import com.atlassian.bitbucket.hook.repository.RepositoryMergeRequestCheckContext;
+import com.atlassian.bitbucket.i18n.I18nService;
+import com.atlassian.bitbucket.pull.PullRequest;
+import com.atlassian.bitbucket.pull.PullRequestRef;
+import com.atlassian.bitbucket.repository.RefChange;
+import com.atlassian.bitbucket.repository.Repository;
+import com.atlassian.bitbucket.scm.CommandOutputHandler;
+import com.atlassian.bitbucket.scm.git.command.GitCommand;
+import com.atlassian.bitbucket.scm.git.command.GitCommandBuilderFactory;
+import com.atlassian.bitbucket.scm.git.command.diff.GitDiffBuilder;
+import com.atlassian.bitbucket.scm.pull.MergeRequest;
+import com.atlassian.bitbucket.setting.Settings;
 import com.atlassian.utils.process.ProcessException;
 import com.atlassian.utils.process.Watchdog;
 import com.google.common.base.Stopwatch;
@@ -88,9 +89,9 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
     public void check(RepositoryMergeRequestCheckContext context) {
         final MergeRequest request = context.getMergeRequest();
         final PullRequest pr = request.getPullRequest();
-        final Changeset prFrom = getChangeSet(pr.getFromRef());
-        final Changeset prTo = getChangeSet(pr.getToRef());
-        final Changeset base = mergeBaseResolver.findMergeBase(prFrom, prTo);
+        final Commit prFrom = getChangeSet(pr.getFromRef());
+        final Commit prTo = getChangeSet(pr.getToRef());
+        final Commit base = mergeBaseResolver.findMergeBase(prFrom, prTo);
         final Collection<Pattern> excludeFiles = getExcludeFiles(context.getSettings());
         final Collection<String> wrongFiles = processMergedChanges(base, prFrom, excludeFiles,
                 context.getSettings());
@@ -115,7 +116,7 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         return sb.toString();
     }
 
-    private Collection<String> processMergedChanges(Changeset base, Changeset prFrom,
+    private Collection<String> processMergedChanges(Commit base, Commit prFrom,
             Collection<Pattern> excludeFiles, Settings settings) {
         final Collection<String> changedFiles = getChangedPaths(prFrom.getRepository(),
                 base.getId(), prFrom.getId(), excludeFiles);
@@ -123,10 +124,10 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
                 settings);
     }
 
-    private Changeset getChangeSet(PullRequestRef prRef) {
-        final Changeset changeSet = commitService.getChangeset(prRef.getRepository(),
-                prRef.getLatestChangeset());
-        return changeSet;
+    private Commit getChangeSet(PullRequestRef prRef) {
+        final CommitRequest.Builder builder = new CommitRequest.Builder(prRef.getRepository(),
+                prRef.getLatestCommit());
+        return commitService.getCommit(builder.build());
     }
 
     private static void printError(Collection<String> files, HookResponse response) {
@@ -272,8 +273,8 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
 
         @Override
         public void process(InputStream output) throws ProcessException {
-            final Stopwatch streamRead = new Stopwatch();
-            final Stopwatch work = new Stopwatch();
+            final Stopwatch streamRead = Stopwatch.createUnstarted();
+            final Stopwatch work = Stopwatch.createUnstarted();
             try {
                 boolean newLine = true;
                 DiffSegmentType segmentType = DiffSegmentType.CONTEXT;

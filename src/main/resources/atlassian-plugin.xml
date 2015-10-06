@@ -9,7 +9,7 @@
         <param name="plugin-logo">images/pluginLogo.png</param>
         <param name="atlassian-data-center-compatible">true</param>
     </plugin-info>
-    <resource type="i18n" name="check-eol" location="com.pbaranchikov.stash.checks"/>
+    <resource type="i18n" name="i18n" location="i18n/stash-eol-check"/>
     <web-resource key="stash-eol-check-resources" name="stash-eol-check Web Resources">
         <dependency>com.atlassian.auiplugin:ajs</dependency>
         <resource type="download" name="stash-eol-check.css" location="/css/stash-eol-check.css"/>
@@ -21,10 +21,10 @@
     <component key="mergeBaseResolver" class="com.pbaranchikov.stash.checks.MergeBaseResolver" public="false"/>
     <component key="realParentResolver" class="com.pbaranchikov.stash.checks.RealParentResolver" public="false"/>
     <component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties"/>
-    <component-import key="commitService" interface="com.atlassian.stash.commit.CommitService"/>
-    <component-import key="builderFactory" interface="com.atlassian.stash.scm.git.GitCommandBuilderFactory"/>
-    <component-import key="gitScmConfig" interface="com.atlassian.stash.scm.git.GitScmConfig"/>
-    <component-import key="i18nService" interface="com.atlassian.stash.i18n.I18nService"/>
+    <component-import key="commitService" interface="com.atlassian.bitbucket.commit.CommitService"/>
+    <component-import key="builderFactory" interface="com.atlassian.bitbucket.scm.git.command.GitCommandBuilderFactory"/>
+    <component-import key="gitScmConfig" interface="com.atlassian.bitbucket.scm.git.GitScmConfig"/>
+    <component-import key="i18nService" interface="com.atlassian.bitbucket.i18n.I18nService"/>
     <repository-hook name="Check end-of-line" key="stash-check-eol-hook" class="com.pbaranchikov.stash.checks.EolCheckHook">
         <config-form name="Simple Hook Config" key="simpleHook-config">
              <view>com.pbaranchikov.stash.eol.check.formContents</view>

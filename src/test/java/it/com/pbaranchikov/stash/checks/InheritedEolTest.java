@@ -7,15 +7,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner;
-
 import it.com.pbaranchikov.stash.checks.utils.WrappersFactory;
 
 /**
  * Tests for "inherit parent EOL style" functionality.
  * @author Pavel Baranchikov
  */
-@RunWith(AtlassianPluginsTestRunner.class)
+@RunWith(com.atlassian.plugins.osgi.test.AtlassianPluginsTestRunner.class)
 public class InheritedEolTest extends AbstractGitCheck {
 
     private File goodFile;

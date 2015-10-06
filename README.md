@@ -11,7 +11,7 @@ http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-W
 This plugin performs both pre-receive hook and merge-check for restricting
 EOL-style of the committed code. Only Linux-style code is allowed.
 
-Plugin is tested on Stash 3.0.0 - 3.7.1. Other versions may work, but
+Plugin is tested on Bitbucket Server 4.0.0 - 4.0.2. Other versions may work, but
 not guaranteed.
 
 ## Settings of the hook/merge check
@@ -35,7 +35,8 @@ not guaranteed.
 
 As of some errors in Maven dependency configuration, you need to install
 Oracle JDBC drivers into your local Maven repository. This is only needed
-by Stash Maven plugins to startup Stash instance for integration testing.
+by Butbucket Maven plugins to startup Bitbucket server instance for integration
+testing.
 ```
 mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 \
      -Dversion=11.2.0.2.0 -Dpackaging=jar -Dfile=${HOME}/download/ojdbc6.jar -DgeneratePom=true
@@ -43,6 +44,9 @@ mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 \
 Of course, you need to download ojdbc6.jar file preparatorily.
 
 ## Version history
+
+### Version 0.6
+- Converted plug-in to Bitbucket server API
 
 ### Version 0.5
 - Fixed exception, thrown when a file matched multiple exclusion patterns

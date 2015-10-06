@@ -1,10 +1,11 @@
 package com.pbaranchikov.stash.checks;
 
-import com.atlassian.stash.commit.CommitService;
-import com.atlassian.stash.content.Changeset;
-import com.atlassian.stash.scm.git.GitCommandBuilderFactory;
-import com.atlassian.stash.scm.git.GitScmConfig;
-import com.atlassian.stash.scm.git.merge.GitMergeBaseBuilder;
+import com.atlassian.bitbucket.commit.Commit;
+import com.atlassian.bitbucket.commit.CommitRequest;
+import com.atlassian.bitbucket.commit.CommitService;
+import com.atlassian.bitbucket.scm.git.GitScmConfig;
+import com.atlassian.bitbucket.scm.git.command.GitCommandBuilderFactory;
+import com.atlassian.bitbucket.scm.git.command.merge.GitMergeBaseBuilder;
 
 /**
  * Determines the merge base of a pair of commits.
@@ -22,7 +23,7 @@ public class MergeBaseResolver {
         this.commitService = commitService;
     }
 
-    public Changeset findMergeBase(Changeset a, Changeset b) {
+    public Commit findMergeBase(Commit a, Commit b) {
         if (a.equals(b)) {
             return a;
         }
@@ -35,7 +36,9 @@ public class MergeBaseResolver {
         if (sha == null) {
             return null;
         }
+        final CommitRequest commitRequest = new CommitRequest.Builder(a.getRepository(), sha)
+                .build();
 
-        return commitService.getChangeset(a.getRepository(), sha);
+        return commitService.getCommit(commitRequest);
     }
 }

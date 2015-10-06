@@ -8,27 +8,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.log4j.Logger;
 
-import com.atlassian.stash.hook.repository.RepositoryHookService;
-import com.atlassian.stash.project.ProjectCreateRequest;
-import com.atlassian.stash.project.ProjectService;
-import com.atlassian.stash.pull.PullRequest;
-import com.atlassian.stash.pull.PullRequestMergeability;
-import com.atlassian.stash.pull.PullRequestService;
-import com.atlassian.stash.repository.RepositoryCreateRequest;
-import com.atlassian.stash.repository.RepositoryForkRequest;
-import com.atlassian.stash.repository.RepositoryService;
-import com.atlassian.stash.server.ApplicationPropertiesService;
-import com.atlassian.stash.setting.Settings;
-import com.atlassian.stash.user.EscalatedSecurityContext;
-import com.atlassian.stash.user.SecurityService;
-import com.atlassian.stash.user.StashUser;
-import com.atlassian.stash.user.UserService;
-import com.atlassian.stash.util.Operation;
+import com.atlassian.bitbucket.hook.repository.RepositoryHookService;
+import com.atlassian.bitbucket.project.ProjectCreateRequest;
+import com.atlassian.bitbucket.project.ProjectService;
+import com.atlassian.bitbucket.pull.PullRequest;
+import com.atlassian.bitbucket.pull.PullRequestMergeability;
+import com.atlassian.bitbucket.pull.PullRequestService;
+import com.atlassian.bitbucket.repository.RepositoryCreateRequest;
+import com.atlassian.bitbucket.repository.RepositoryForkRequest;
+import com.atlassian.bitbucket.repository.RepositoryService;
+import com.atlassian.bitbucket.server.ApplicationPropertiesService;
+import com.atlassian.bitbucket.setting.Settings;
+import com.atlassian.bitbucket.user.ApplicationUser;
+import com.atlassian.bitbucket.user.EscalatedSecurityContext;
+import com.atlassian.bitbucket.user.SecurityService;
+import com.atlassian.bitbucket.user.UserService;
+import com.atlassian.bitbucket.util.Operation;
 import com.google.common.io.Files;
 import com.pbaranchikov.stash.checks.Constants;
 
@@ -63,6 +65,8 @@ public class WrappersFactory {
     private final Collection<Project> createdProjects = new ArrayList<>();
     private final Collection<Workspace> createdWorkspaces = new ArrayList<>();
 
+    private final Logger logger = Logger.getLogger(getClass());
+
     public WrappersFactory(ProjectService projectService, RepositoryService repositoryService,
             RepositoryHookService repositoryHookService,
             ApplicationPropertiesService applicationPropertiesService,
@@ -73,7 +77,7 @@ public class WrappersFactory {
         this.repositoryHookService = repositoryHookService;
         this.pullRequestService = pullRequestService;
 
-        final StashUser adminUser = userService.getUserByName(STASH_USER);
+        final ApplicationUser adminUser = userService.getUserByName(STASH_USER);
         this.securityContext = securityService.impersonating(adminUser, "tests running");
 
         try {
@@ -91,23 +95,60 @@ public class WrappersFactory {
         for (Repository repository : createdRepositories) {
             repository.delete();
         }
+        createdRepositories.clear();
         for (Project project : createdProjects) {
             project.delete();
         }
+        createdProjects.clear();
         for (Workspace workspace : createdWorkspaces) {
             if (workspace.getWorkDir().exists()) {
                 FileUtils.forceDelete(workspace.getWorkDir());
             }
         }
+        createdWorkspaces.clear();
+    }
+
+    /**
+     * Method searches for a suffix, that we can add to the specified key to
+     * ensure, that there is no projects already created with this key.
+     * @param key requested key
+     * @return suitable suffix
+     * @throws IllegalStateException if suffix cannot be found
+     */
+    private String findSuitableSuffix(String key) {
+        final List<String> existingProjects = securityContext
+                .call(new Operation<List<String>, RuntimeException>() {
+                    @Override
+                    public List<String> perform() throws RuntimeException {
+                        return projectService.findAllKeys();
+                    }
+                });
+
+        if (!existingProjects.contains(key)) {
+            return "";
+        }
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
+            final String suffix = "_" + i;
+            final String supposedKey = key + suffix;
+            if (!existingProjects.contains(supposedKey)) {
+                return suffix;
+            }
+        }
+        throw new IllegalStateException("Could not determine suitable suffix for project with key "
+                + key + ". Please, restart Bitbucket server");
     }
 
     public Project createProject(String key, String name) {
-        final ProjectCreateRequest request = new ProjectCreateRequest.Builder().key(key).name(name)
+        final String keySuffix = findSuitableSuffix(key);
+        final ProjectCreateRequest request = new ProjectCreateRequest.Builder()
+                .key(key + keySuffix).name(name + keySuffix)
                 .description("description for project " + name).build();
-        final com.atlassian.stash.project.Project stashProject = securityContext
-                .call(new Operation<com.atlassian.stash.project.Project, RuntimeException>() {
+        logger.debug("Creating project " + request.getKey());
+        final com.atlassian.bitbucket.project.Project stashProject = securityContext
+                .call(new Operation<com.atlassian.bitbucket.project.Project, RuntimeException>() {
                     @Override
-                    public com.atlassian.stash.project.Project perform() throws RuntimeException {
+                    public com.atlassian.bitbucket.project.Project perform()
+                            throws RuntimeException {
                         return projectService.create(request);
                     }
                 });
@@ -116,8 +157,8 @@ public class WrappersFactory {
     }
 
     public void deleteProject(Project project) {
-        final com.atlassian.stash.project.Project stashProject = projectService.getByKey(project
-                .getKey());
+        final com.atlassian.bitbucket.project.Project stashProject = projectService
+                .getByKey(project.getKey());
         projectService.delete(stashProject);
     }
 
@@ -143,15 +184,16 @@ public class WrappersFactory {
      */
     private class ProjectImpl implements Project {
 
-        private final com.atlassian.stash.project.Project project;
+        private final com.atlassian.bitbucket.project.Project project;
 
-        public ProjectImpl(com.atlassian.stash.project.Project project) {
+        ProjectImpl(com.atlassian.bitbucket.project.Project project) {
             this.project = project;
             createdProjects.add(this);
         }
 
         @Override
         public Repository createRepository(String name) {
+            logger.debug("Creating repository " + name + " in project " + project.getKey());
             final RepositoryCreateRequest request = new RepositoryCreateRequest.Builder()
                     .project(project).name(name).scmId(GIT).build();
             final Repository repository = securityContext
@@ -182,7 +224,7 @@ public class WrappersFactory {
 
         @Override
         public void removeRepository(String key) {
-            final com.atlassian.stash.repository.Repository repository = repositoryService
+            final com.atlassian.bitbucket.repository.Repository repository = repositoryService
                     .getBySlug(project.getKey(), key);
             if (repository != null) {
                 securityContext.call(new Operation<Void, RuntimeException>() {
@@ -197,11 +239,11 @@ public class WrappersFactory {
 
         @Override
         public Repository forceCreateRepository(String key) {
-            try {
-                removeRepository(key);
-            } catch (Exception e) {
-
-            }
+//            try {
+//                removeRepository(key);
+//            } catch (Exception e) {
+//
+//            }
             return createRepository(key);
         }
 
@@ -212,9 +254,9 @@ public class WrappersFactory {
      */
     private class WiredRepository implements Repository {
 
-        private final com.atlassian.stash.repository.Repository repository;
+        private final com.atlassian.bitbucket.repository.Repository repository;
 
-        public WiredRepository(com.atlassian.stash.repository.Repository repository) {
+        WiredRepository(com.atlassian.bitbucket.repository.Repository repository) {
             this.repository = repository;
             createdRepositories.add(this);
         }
@@ -317,6 +359,11 @@ public class WrappersFactory {
                     });
             return canMerge;
         }
+
+        @Override
+        public String toString() {
+            return repository.toString();
+        }
     }
 
     /**
@@ -326,7 +373,7 @@ public class WrappersFactory {
 
         private final File workspaceDir;
 
-        public WorkspaceImpl(File workspaceDir) {
+        WorkspaceImpl(File workspaceDir) {
             this.workspaceDir = workspaceDir;
             createdWorkspaces.add(this);
         }
@@ -450,7 +497,7 @@ public class WrappersFactory {
         private final String stdout;
         private final String stderr;
 
-        public ExecutionResult(int exitCode, String stdout, String stderr) {
+        ExecutionResult(int exitCode, String stdout, String stderr) {
             this.exitCode = exitCode;
             this.stdout = stdout;
             this.stderr = stderr;
