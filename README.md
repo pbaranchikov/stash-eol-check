@@ -11,7 +11,7 @@ http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-W
 This plugin performs both pre-receive hook and merge-check for restricting
 EOL-style of the committed code. Only Linux-style code is allowed.
 
-Plugin is tested on Stash 3.0.0 - 3.7.1. Other versions may work, but
+Plugin is tested on Stash 3.0.0 - 3.11.4. Other 3.x versions may work, but
 not guaranteed.
 
 ## Settings of the hook/merge check
@@ -28,8 +28,6 @@ not guaranteed.
 
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
-### Build isues
-* integration tests are not working for Stash 3.8.x and above.
 
 ## Development
 
@@ -43,6 +41,9 @@ mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 \
 Of course, you need to download ojdbc6.jar file preparatorily.
 
 ## Version history
+
+### Version 0.5.1
+- Fixed build failures in Stash 3.8 and newer
 
 ### Version 0.5
 - Fixed exception, thrown when a file matched multiple exclusion patterns

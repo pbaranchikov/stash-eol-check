@@ -91,14 +91,17 @@ public class WrappersFactory {
         for (Repository repository : createdRepositories) {
             repository.delete();
         }
+        createdRepositories.clear();
         for (Project project : createdProjects) {
             project.delete();
         }
+        createdProjects.clear();
         for (Workspace workspace : createdWorkspaces) {
             if (workspace.getWorkDir().exists()) {
                 FileUtils.forceDelete(workspace.getWorkDir());
             }
         }
+        createdWorkspaces.clear();
     }
 
     public Project createProject(String key, String name) {
