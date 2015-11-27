@@ -14,6 +14,7 @@ import com.atlassian.bitbucket.repository.RefChange;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.scm.CommandOutputHandler;
 import com.atlassian.bitbucket.scm.git.command.GitCommandBuilderFactory;
+import com.atlassian.bitbucket.scm.git.command.merge.GitMergeBaseBuilder;
 
 /**
  * Helper class to resolve the real parent of the commit. Real parent is a
@@ -24,13 +25,10 @@ import com.atlassian.bitbucket.scm.git.command.GitCommandBuilderFactory;
 public class RealParentResolver {
     private final GitCommandBuilderFactory builderFactory;
     private final CommitService commitService;
-    private final MergeBaseResolver mergeBaseResolver;
 
-    public RealParentResolver(GitCommandBuilderFactory builderFactory, CommitService commitService,
-            MergeBaseResolver mergeBaseResolver) {
+    public RealParentResolver(GitCommandBuilderFactory builderFactory, CommitService commitService) {
         this.builderFactory = builderFactory;
         this.commitService = commitService;
-        this.mergeBaseResolver = mergeBaseResolver;
     }
 
     /**
@@ -51,23 +49,20 @@ public class RealParentResolver {
         }
         final Commit branch = getCommitById(repository, branches.iterator().next());
         final Commit newChangeset = getCommitById(repository, refChange.getToHash());
-        final Commit base = mergeBaseResolver.findMergeBase(branch, newChangeset);
-        return base.getId();
+        if (branch.equals(newChangeset)) {
+            return branch.getId();
+        }
+
+        final GitMergeBaseBuilder builder = builderFactory.builder(repository).mergeBase()
+                .between(branch.getId(), newChangeset.getId());
+        final String sha = builder.build(new FirstLineOutputHandler()).call();
+        return sha;
     }
 
     private Commit getCommitById(Repository repository, String commitId) {
         final CommitRequest.Builder builder = new CommitRequest.Builder(repository, commitId);
         final CommitRequest request = builder.build();
         return commitService.getCommit(request);
-    }
-
-    private String getLastCommit(Repository repository, RefChange refChange) {
-        final Collection<String> revlist = builderFactory.builder(repository).revList()
-                .rev(refChange.getToHash()).limit(1).build(new MultilineReader()).call();
-        if (revlist.size() != 1) {
-            throw new IllegalStateException("Number of revisions is " + revlist.size());
-        }
-        return revlist.iterator().next();
     }
 
     /**

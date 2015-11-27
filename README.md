@@ -47,6 +47,8 @@ Of course, you need to download ojdbc6.jar file preparatorily.
 
 ### Version 0.7
 - Got rid of snapshot dependencies
+- Added several non-admin users for creating and forking repositories in tests
+- Fixed #3: access denied on verifying pull request by non-admin user
 
 ### Version 0.6
 - Converted plug-in to Bitbucket server API
