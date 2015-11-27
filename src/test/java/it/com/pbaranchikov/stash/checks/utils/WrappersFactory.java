@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -14,8 +15,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.log4j.Logger;
+import org.junit.Assert;
+import org.springframework.beans.factory.DisposableBean;
 
 import com.atlassian.bitbucket.hook.repository.RepositoryHookService;
+import com.atlassian.bitbucket.permission.Permission;
+import com.atlassian.bitbucket.permission.PermissionAdminService;
+import com.atlassian.bitbucket.permission.SetPermissionRequest;
 import com.atlassian.bitbucket.project.ProjectCreateRequest;
 import com.atlassian.bitbucket.project.ProjectService;
 import com.atlassian.bitbucket.pull.PullRequest;
@@ -24,11 +30,13 @@ import com.atlassian.bitbucket.pull.PullRequestService;
 import com.atlassian.bitbucket.repository.RepositoryCreateRequest;
 import com.atlassian.bitbucket.repository.RepositoryForkRequest;
 import com.atlassian.bitbucket.repository.RepositoryService;
+import com.atlassian.bitbucket.repository.RepositoryUpdateRequest;
 import com.atlassian.bitbucket.server.ApplicationPropertiesService;
 import com.atlassian.bitbucket.setting.Settings;
 import com.atlassian.bitbucket.user.ApplicationUser;
 import com.atlassian.bitbucket.user.EscalatedSecurityContext;
 import com.atlassian.bitbucket.user.SecurityService;
+import com.atlassian.bitbucket.user.UserAdminService;
 import com.atlassian.bitbucket.user.UserService;
 import com.atlassian.bitbucket.util.Operation;
 import com.google.common.io.Files;
@@ -38,7 +46,7 @@ import com.pbaranchikov.stash.checks.Constants;
  * Class provides various wrappers for interfaces, used by test cases.
  * @author Pavel Baranchikov
  */
-public class WrappersFactory {
+public class WrappersFactory implements DisposableBean {
     private static final String STASH_USER = "admin";
     private static final String STASH_PASSWORD = STASH_USER;
     private static final String HOOK_KEY = "com.pbaranchikov.stash-eol-check:stash-check-eol-hook";
@@ -55,8 +63,21 @@ public class WrappersFactory {
     private final ProjectService projectService;
     private final RepositoryService repositoryService;
     private final RepositoryHookService repositoryHookService;
-    // private final SecurityService securityService;
-    private final EscalatedSecurityContext securityContext;
+    private final UserService userService;
+    private final UserAdminService userAdminService;
+    private final PermissionAdminService permissionAdminService;
+    private final SecurityService securityService;
+
+    /**
+     * Regular user to perform operations.
+     */
+    private final StashUser simpleUser;
+    /**
+     * Admin user to perform privileged operations.
+     */
+    private final StashUser adminUser;
+    private final StashUser ownerUser;
+
     private final PullRequestService pullRequestService;
 
     private final URL stashUrl;
@@ -71,14 +92,24 @@ public class WrappersFactory {
             RepositoryHookService repositoryHookService,
             ApplicationPropertiesService applicationPropertiesService,
             SecurityService securityService, UserService userService,
-            PullRequestService pullRequestService) {
+            PullRequestService pullRequestService, UserAdminService userAdminService,
+            PermissionAdminService permissionAdminService) {
         this.projectService = projectService;
         this.repositoryService = repositoryService;
         this.repositoryHookService = repositoryHookService;
         this.pullRequestService = pullRequestService;
+        this.userService = userService;
+        this.userAdminService = userAdminService;
+        this.permissionAdminService = permissionAdminService;
+        this.securityService = securityService;
 
-        final ApplicationUser adminUser = userService.getUserByName(STASH_USER);
-        this.securityContext = securityService.impersonating(adminUser, "tests running");
+        final ApplicationUser adminApplicationUser = userService.getUserByName(STASH_USER);
+        final EscalatedSecurityContext securityContext = securityService.impersonating(
+                adminApplicationUser, "tests running");
+        adminUser = new StashUser(adminApplicationUser, STASH_PASSWORD, securityContext);
+
+        this.simpleUser = createNewUser("SimpleUser");
+        this.ownerUser = createNewUser("RepoOwner");
 
         try {
             stashUrl = applicationPropertiesService.getBaseUrl().toURL();
@@ -109,6 +140,42 @@ public class WrappersFactory {
     }
 
     /**
+     * Method creates new user with the suggested name. Method will try to
+     * distinguish user name, that is not used, appending suggested user name
+     * with suffixes
+     * @param userName suggested user name
+     * @return user structure
+     */
+    private StashUser createNewUser(final String userName) {
+        final String password = "z";
+        final String resultUserName = findFreeUserName(userName);
+        adminUser.getSecurityContext().call(new Operation<Void, RuntimeException>() {
+            @Override
+            public Void perform() throws RuntimeException {
+                userAdminService.createUser(resultUserName, password, resultUserName,
+                        resultUserName + "@foo.bar");
+                return null;
+            }
+        });
+        final ApplicationUser user = userService.getUserByName(resultUserName);
+        final EscalatedSecurityContext userContext = securityService.impersonating(user,
+                "test operation as " + userName);
+
+        return new StashUser(user, password, userContext);
+    }
+
+    private String findFreeUserName(final String userName) {
+        boolean foundFreeUserName = false;
+        int suffix = 0;
+        String resultUserName = userName;
+        while (!foundFreeUserName) {
+            resultUserName = MessageFormat.format("{0}_{1}", userName, suffix++);
+            foundFreeUserName = userService.getUserByName(resultUserName) == null;
+        }
+        return resultUserName;
+    }
+
+    /**
      * Method searches for a suffix, that we can add to the specified key to
      * ensure, that there is no projects already created with this key.
      * @param key requested key
@@ -116,7 +183,7 @@ public class WrappersFactory {
      * @throws IllegalStateException if suffix cannot be found
      */
     private String findSuitableSuffix(String key) {
-        final List<String> existingProjects = securityContext
+        final List<String> existingProjects = adminUser.getSecurityContext()
                 .call(new Operation<List<String>, RuntimeException>() {
                     @Override
                     public List<String> perform() throws RuntimeException {
@@ -144,7 +211,7 @@ public class WrappersFactory {
                 .key(key + keySuffix).name(name + keySuffix)
                 .description("description for project " + name).build();
         logger.debug("Creating project " + request.getKey());
-        final com.atlassian.bitbucket.project.Project stashProject = securityContext
+        final com.atlassian.bitbucket.project.Project stashProject = adminUser.getSecurityContext()
                 .call(new Operation<com.atlassian.bitbucket.project.Project, RuntimeException>() {
                     @Override
                     public com.atlassian.bitbucket.project.Project perform()
@@ -152,8 +219,21 @@ public class WrappersFactory {
                         return projectService.create(request);
                     }
                 });
+        final SetPermissionRequest userPermissionsRequest = new SetPermissionRequest.Builder()
+                .user(simpleUser.getApplicationUser())
+                .projectPermission(Permission.PROJECT_READ, stashProject).build();
+        final SetPermissionRequest ownerPermissionsRequest = new SetPermissionRequest.Builder()
+                .user(ownerUser.getApplicationUser())
+                .projectPermission(Permission.PROJECT_ADMIN, stashProject).build();
+        adminUser.getSecurityContext().call(new Operation<Void, RuntimeException>() {
+            @Override
+            public Void perform() throws RuntimeException {
+                permissionAdminService.setPermission(userPermissionsRequest);
+                permissionAdminService.setPermission(ownerPermissionsRequest);
+                return null;
+            }
+        });
         return new ProjectImpl(stashProject);
-
     }
 
     public void deleteProject(Project project) {
@@ -179,6 +259,20 @@ public class WrappersFactory {
         }
     }
 
+    @Override
+    public void destroy() throws Exception {
+        // Users are not changed across the tests, so we remove it once at the
+        // very end.
+        adminUser.getSecurityContext().call(new Operation<Void, RuntimeException>() {
+            @Override
+            public Void perform() throws RuntimeException {
+                userAdminService.deleteUser(simpleUser.getUserName());
+                userAdminService.deleteUser(ownerUser.getUserName());
+                return null;
+            }
+        });
+    }
+
     /**
      * Project implementation via REST.
      */
@@ -196,11 +290,11 @@ public class WrappersFactory {
             logger.debug("Creating repository " + name + " in project " + project.getKey());
             final RepositoryCreateRequest request = new RepositoryCreateRequest.Builder()
                     .project(project).name(name).scmId(GIT).build();
-            final Repository repository = securityContext
+            final Repository repository = ownerUser.getSecurityContext()
                     .call(new Operation<Repository, RuntimeException>() {
                         @Override
                         public Repository perform() throws RuntimeException {
-                            return new WiredRepository(repositoryService.create(request));
+                            return new WiredRepository(repositoryService.create(request), ownerUser);
                         }
                     });
             return repository;
@@ -213,7 +307,7 @@ public class WrappersFactory {
 
         @Override
         public void delete() {
-            securityContext.call(new Operation<Void, RuntimeException>() {
+            adminUser.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                 @Override
                 public Void perform() throws RuntimeException {
                     projectService.delete(project);
@@ -227,7 +321,7 @@ public class WrappersFactory {
             final com.atlassian.bitbucket.repository.Repository repository = repositoryService
                     .getBySlug(project.getKey(), key);
             if (repository != null) {
-                securityContext.call(new Operation<Void, RuntimeException>() {
+                ownerUser.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                     @Override
                     public Void perform() throws RuntimeException {
                         repositoryService.delete(repository);
@@ -239,11 +333,6 @@ public class WrappersFactory {
 
         @Override
         public Repository forceCreateRepository(String key) {
-//            try {
-//                removeRepository(key);
-//            } catch (Exception e) {
-//
-//            }
             return createRepository(key);
         }
 
@@ -255,9 +344,11 @@ public class WrappersFactory {
     private class WiredRepository implements Repository {
 
         private final com.atlassian.bitbucket.repository.Repository repository;
+        private final StashUser user;
 
-        WiredRepository(com.atlassian.bitbucket.repository.Repository repository) {
+        WiredRepository(com.atlassian.bitbucket.repository.Repository repository, StashUser user) {
             this.repository = repository;
+            this.user = user;
             createdRepositories.add(this);
         }
 
@@ -275,13 +366,13 @@ public class WrappersFactory {
         @Override
         public String getCloneUrl() {
             return String.format("%s://%s:%s@%s:%d%s/scm/%s/%s", stashUrl.getProtocol(),
-                    STASH_USER, STASH_PASSWORD, stashUrl.getHost(), stashUrl.getPort(),
+                    user.getUserName(), user.getPassword(), stashUrl.getHost(), stashUrl.getPort(),
                     stashUrl.getPath(), repository.getProject().getKey(), repository.getSlug());
         }
 
         @Override
         public void enableHook() {
-            securityContext.call(new Operation<Void, RuntimeException>() {
+            user.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                 @Override
                 public Void perform() throws RuntimeException {
                     repositoryHookService.enable(repository, HOOK_KEY);
@@ -292,7 +383,7 @@ public class WrappersFactory {
 
         @Override
         public void disableHook() {
-            securityContext.call(new Operation<Void, RuntimeException>() {
+            user.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                 @Override
                 public Void perform() throws RuntimeException {
                     repositoryHookService.disable(repository, HOOK_KEY);
@@ -303,7 +394,7 @@ public class WrappersFactory {
 
         @Override
         public void delete() {
-            securityContext.call(new Operation<Void, RuntimeException>() {
+            user.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                 @Override
                 public Void perform() throws RuntimeException {
                     repositoryService.delete(repository);
@@ -317,7 +408,7 @@ public class WrappersFactory {
             final Settings hookSettings = repositoryHookService.createSettingsBuilder()
                     .add(Constants.SETTING_EXCLUDED_FILES, excludedFiles)
                     .add(Constants.SETTING_ALLOW_INHERITED_EOL, allowInherited).build();
-            securityContext.call(new Operation<Void, RuntimeException>() {
+            user.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                 @Override
                 public Void perform() throws RuntimeException {
                     repositoryHookService.setSettings(repository, HOOK_KEY, hookSettings);
@@ -328,12 +419,17 @@ public class WrappersFactory {
 
         @Override
         public Repository fork() {
-            final RepositoryForkRequest request = new RepositoryForkRequest.Builder().parent(
-                    repository).build();
-            return securityContext.call(new Operation<Repository, RuntimeException>() {
+            return simpleUser.getSecurityContext().call(new Operation<Repository, RuntimeException>() {
                 @Override
                 public Repository perform() throws RuntimeException {
-                    return new WiredRepository(repositoryService.fork(request));
+                    final RepositoryForkRequest request = new RepositoryForkRequest.Builder().parent(
+                            repository).build();
+                    final com.atlassian.bitbucket.repository.Repository fork = repositoryService
+                            .fork(request);
+                    final RepositoryUpdateRequest updateRequest = new RepositoryUpdateRequest.Builder(
+                            fork).publiclyAccessible(false).build();
+                    repositoryService.update(updateRequest);
+                    return new WiredRepository(fork, simpleUser);
                 }
             });
         }
@@ -342,22 +438,38 @@ public class WrappersFactory {
         public boolean tryCreatePullRequest(final Repository targetRepository,
                 final String branchName) {
             final WiredRepository targetWiredRepository = (WiredRepository) targetRepository;
-            final boolean canMerge = securityContext
-                    .call(new Operation<Boolean, RuntimeException>() {
+            final PullRequest pullRequest = user.getSecurityContext().call(
+                    new Operation<PullRequest, RuntimeException>() {
                         @Override
-                        public Boolean perform() throws RuntimeException {
-                            final PullRequest pullRequest = pullRequestService.create(
-                                    "pull-request-n",
+                        public PullRequest perform() throws RuntimeException {
+                            return pullRequestService.create("pull-request-n",
                                     "New pull request from repo " + repository.getName(),
                                     Collections.<String>emptySet(), repository, branchName,
                                     targetWiredRepository.repository, branchName);
+                        }
+                    });
+            final boolean canMergeOwner = ownerUser.getSecurityContext().call(
+                    new Operation<Boolean, RuntimeException>() {
+                        @Override
+                        public Boolean perform() throws RuntimeException {
                             final PullRequestMergeability mergeability = pullRequestService
                                     .canMerge(targetWiredRepository.repository.getId(),
                                             pullRequest.getId());
                             return mergeability.canMerge();
                         }
                     });
-            return canMerge;
+            final boolean canMergeAdmin = ownerUser.getSecurityContext().call(
+                    new Operation<Boolean, RuntimeException>() {
+                        @Override
+                        public Boolean perform() throws RuntimeException {
+                            final PullRequestMergeability mergeability = pullRequestService
+                                    .canMerge(targetWiredRepository.repository.getId(),
+                                            pullRequest.getId());
+                            return mergeability.canMerge();
+                        }
+                    });
+            Assert.assertEquals(canMergeOwner, canMergeAdmin);
+            return canMergeOwner;
         }
 
         @Override
@@ -487,6 +599,11 @@ public class WrappersFactory {
             executeCommand(GIT_TAG, tagName, GIT_M, comment);
         }
 
+        @Override
+        public String toString() {
+            return workspaceDir.toString();
+        }
+
     }
 
     /**
@@ -538,6 +655,42 @@ public class WrappersFactory {
 
         public GitException(String commands, Throwable cause) {
             super(commands, cause);
+        }
+    }
+
+    /**
+     * Class represents Stash user.
+     */
+    private static class StashUser {
+        private final String password;
+        private final ApplicationUser applicationUser;
+        private final EscalatedSecurityContext context;
+
+        StashUser(ApplicationUser applicationUser, String password, EscalatedSecurityContext context) {
+            this.applicationUser = applicationUser;
+            this.password = password;
+            this.context = context;
+        }
+
+        public String getUserName() {
+            return applicationUser.getName();
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public ApplicationUser getApplicationUser() {
+            return applicationUser;
+        }
+
+        public EscalatedSecurityContext getSecurityContext() {
+            return context;
+        }
+
+        @Override
+        public String toString() {
+            return applicationUser.toString();
         }
     }
 

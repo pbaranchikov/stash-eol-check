@@ -91,6 +91,5 @@ public class CreateBranchTest extends AbstractGitCheck {
         getRepository().enableHook();
         getWorkspace().branch(BRANCH_NAME);
         getWorkspace().checkout(BRANCH_NAME);
-
     }
 }

@@ -16,5 +16,7 @@
     <component-import key="repositoryService" interface="com.atlassian.bitbucket.repository.RepositoryService"/>
     <component-import key="repositoryHookService" interface="com.atlassian.bitbucket.hook.repository.RepositoryHookService"/>
     <component-import key="projectService" interface="com.atlassian.bitbucket.project.ProjectService"/>
+    <component-import key="userAdminService" interface="com.atlassian.bitbucket.user.UserAdminService"/>
+    <component-import key="permissionAdminService" interface="com.atlassian.bitbucket.permission.PermissionAdminService"/>
     <component key="stash-eol-check-wrapper-factory" class="it.com.pbaranchikov.stash.checks.utils.WrappersFactory" public="false"/>
 </atlassian-plugin>
