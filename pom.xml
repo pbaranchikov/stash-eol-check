@@ -78,6 +78,7 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <scope>test</scope>
+            <version>4.11</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
@@ -193,7 +194,7 @@
         <bitbucket.version>4.0.2</bitbucket.version>
         <bitbucket.data.version>${bitbucket.version}</bitbucket.data.version>
         <amps.version>6.1.2</amps.version>
-        <plugin.testrunner.version>1.2.4-SNAPSHOT</plugin.testrunner.version>
+        <plugin.testrunner.version>1.2.3</plugin.testrunner.version>
     </properties>
 
 </project>
