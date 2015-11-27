@@ -18,7 +18,6 @@ import com.atlassian.stash.commit.CommitService;
 import com.atlassian.stash.content.AbstractChangeCallback;
 import com.atlassian.stash.content.Change;
 import com.atlassian.stash.content.ChangesRequest;
-import com.atlassian.stash.content.Changeset;
 import com.atlassian.stash.content.DiffSegmentType;
 import com.atlassian.stash.hook.HookResponse;
 import com.atlassian.stash.hook.repository.PreReceiveRepositoryHook;
@@ -27,7 +26,8 @@ import com.atlassian.stash.hook.repository.RepositoryMergeRequestCheck;
 import com.atlassian.stash.hook.repository.RepositoryMergeRequestCheckContext;
 import com.atlassian.stash.i18n.I18nService;
 import com.atlassian.stash.pull.PullRequest;
-import com.atlassian.stash.pull.PullRequestRef;
+import com.atlassian.stash.pull.PullRequestChangesRequest;
+import com.atlassian.stash.pull.PullRequestService;
 import com.atlassian.stash.repository.RefChange;
 import com.atlassian.stash.repository.Repository;
 import com.atlassian.stash.scm.CommandOutputHandler;
@@ -38,6 +38,7 @@ import com.atlassian.stash.scm.pull.MergeRequest;
 import com.atlassian.stash.setting.Settings;
 import com.atlassian.utils.process.ProcessException;
 import com.atlassian.utils.process.Watchdog;
+import com.google.common.base.Function;
 import com.google.common.base.Stopwatch;
 
 /**
@@ -53,19 +54,33 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
 
     private final CommitService commitService;
     private final GitCommandBuilderFactory builderFactory;
-    private final MergeBaseResolver mergeBaseResolver;
-    private final RealParentResolver realParentResolver;
     private final I18nService i18service;
+    private final PullRequestService pullRequestService;
+
+    private final RealParentResolver realParentResolver;
     private final Logger log = LoggerFactory.getLogger(getClass());
+    private final Function<Void, AbstractEolHandler> strictHandlerCreator;
+    private final Function<Void, AbstractEolHandler> inheritedEolCreator;
 
     public EolCheckHook(CommitService commitService, GitCommandBuilderFactory builderFactory,
-            MergeBaseResolver mergeBaseResolver, RealParentResolver realParentResolver,
-            I18nService i18service) {
+            RealParentResolver realParentResolver, I18nService i18service,
+            PullRequestService pullRequestService) {
         this.commitService = commitService;
         this.builderFactory = builderFactory;
-        this.mergeBaseResolver = mergeBaseResolver;
         this.realParentResolver = realParentResolver;
         this.i18service = i18service;
+        this.pullRequestService = pullRequestService;
+        this.strictHandlerCreator = new Function<Void, AbstractEolHandler>() {
+            @Override
+            public AbstractEolHandler apply(Void arg0) {
+                return new StrictEolHandler();
+            }
+        };
+        this.inheritedEolCreator = new Function<Void, AbstractEolHandler>() {
+            public AbstractEolHandler apply(Void arg0) {
+                return new AllowInheritedStyleEolHandler();
+            }
+        };
     }
 
     @Override
@@ -88,12 +103,11 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
     public void check(RepositoryMergeRequestCheckContext context) {
         final MergeRequest request = context.getMergeRequest();
         final PullRequest pr = request.getPullRequest();
-        final Changeset prFrom = getChangeSet(pr.getFromRef());
-        final Changeset prTo = getChangeSet(pr.getToRef());
-        final Changeset base = mergeBaseResolver.findMergeBase(prFrom, prTo);
-        final Collection<Pattern> excludeFiles = getExcludeFiles(context.getSettings());
-        final Collection<String> wrongFiles = processMergedChanges(base, prFrom, excludeFiles,
-                context.getSettings());
+        final Settings settings = context.getSettings();
+
+        final Collection<Pattern> excludeFiles = getExcludeFiles(settings);
+        final Collection<String> changedFiles = getChangedPaths(pr, excludeFiles);
+        final Collection<String> wrongFiles = checkForWrongEol(changedFiles, pr, settings);
         if (!wrongFiles.isEmpty()) {
             request.veto(i18service.getText("wrong.eol.style.check.error",
                     "Wrong EOL-style used in the pull request"), getPullRequestError(wrongFiles));
@@ -115,20 +129,6 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         return sb.toString();
     }
 
-    private Collection<String> processMergedChanges(Changeset base, Changeset prFrom,
-            Collection<Pattern> excludeFiles, Settings settings) {
-        final Collection<String> changedFiles = getChangedPaths(prFrom.getRepository(),
-                base.getId(), prFrom.getId(), excludeFiles);
-        return checkForWrongEol(changedFiles, prFrom.getRepository(), base.getId(), prFrom.getId(),
-                settings);
-    }
-
-    private Changeset getChangeSet(PullRequestRef prRef) {
-        final Changeset changeSet = commitService.getChangeset(prRef.getRepository(),
-                prRef.getLatestChangeset());
-        return changeSet;
-    }
-
     private static void printError(Collection<String> files, HookResponse response) {
         printLn(response, "The following files have wrong EOL-style:");
         // Collections.sort(paths);
@@ -142,6 +142,18 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
     private static void printLn(HookResponse response, String message) {
         response.out().write(message);
         response.out().write(EOL);
+    }
+
+    private Collection<String> getChangedPaths(PullRequest pullRequest,
+            Collection<Pattern> excludeFiles) {
+        final PullRequestChangesRequest request = new PullRequestChangesRequest.Builder(pullRequest)
+                .build();
+
+        final ChangesPathsCollector pathsCallback = new ChangesPathsCollector();
+        pullRequestService.streamChanges(request, pathsCallback);
+        final Collection<String> changedFiles = pathsCallback.getChangedPaths();
+        filterFiles(changedFiles, excludeFiles);
+        return changedFiles;
     }
 
     private Collection<String> getChangedPaths(Repository repository, String fromId, String toId,
@@ -186,18 +198,26 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         return result;
     }
 
+    private Collection<String> checkForWrongEol(Collection<String> changedPaths,
+            PullRequest pullRequest, Settings settings) {
+        return checkForWrongEol(changedPaths, pullRequest.getToRef().getRepository(), pullRequest
+                .getToRef().getLatestChangeset(), pullRequest.getFromRef().getLatestChangeset(),
+                settings);
+    }
+
     private Collection<String> checkForWrongEol(Collection<String> changedPaths, Repository repo,
             String since, String to, Settings settings) {
+        final Collection<String> wrongPaths = new HashSet<String>();
         final boolean allowInheritedEol = Boolean.TRUE.equals(settings
                 .getBoolean(Constants.SETTING_ALLOW_INHERITED_EOL));
-        final Collection<String> wrongPaths = new HashSet<String>();
+        final Function<Void, AbstractEolHandler> handlerCreator = allowInheritedEol ? inheritedEolCreator
+                : strictHandlerCreator;
         for (String path : changedPaths) {
             final GitDiffBuilder builder = builderFactory.builder(repo).diff().rev(to).path(path);
             if (since != null) {
                 builder.ancestor(since);
             }
-            final AbstractEolHandler outputHandler = allowInheritedEol ? new AllowInheritedStyleEolHandler()
-                    : new StrictEolHandler();
+            final AbstractEolHandler outputHandler = handlerCreator.apply(null);
             builder.contextLines(outputHandler.getRequiredContext());
             final GitCommand<Boolean> cmd = builder.build(outputHandler);
             final Boolean result = cmd.call();

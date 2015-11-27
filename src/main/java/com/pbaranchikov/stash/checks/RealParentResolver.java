@@ -13,6 +13,7 @@ import com.atlassian.stash.repository.RefChange;
 import com.atlassian.stash.repository.Repository;
 import com.atlassian.stash.scm.CommandOutputHandler;
 import com.atlassian.stash.scm.git.GitCommandBuilderFactory;
+import com.atlassian.stash.scm.git.merge.GitMergeBaseBuilder;
 
 /**
  * Helper class to resolve the real parent of the commit. Real parent is a
@@ -23,13 +24,10 @@ import com.atlassian.stash.scm.git.GitCommandBuilderFactory;
 public class RealParentResolver {
     private final GitCommandBuilderFactory builderFactory;
     private final CommitService commitService;
-    private final MergeBaseResolver mergeBaseResolver;
 
-    public RealParentResolver(GitCommandBuilderFactory builderFactory, CommitService commitService,
-            MergeBaseResolver mergeBaseResolver) {
+    public RealParentResolver(GitCommandBuilderFactory builderFactory, CommitService commitService) {
         this.builderFactory = builderFactory;
         this.commitService = commitService;
-        this.mergeBaseResolver = mergeBaseResolver;
     }
 
     /**
@@ -51,8 +49,14 @@ public class RealParentResolver {
         final Changeset branch = commitService.getChangeset(repository, branches.iterator().next());
         final Changeset newChangeset = commitService.getChangeset(repository,
                 getLastCommit(repository, refChange));
-        final Changeset base = mergeBaseResolver.findMergeBase(branch, newChangeset);
-        return base.getId();
+        if (branch.equals(newChangeset)) {
+            return branch.getId();
+        }
+
+        final GitMergeBaseBuilder builder = builderFactory.builder(repository).mergeBase()
+                .between(branch.getId(), newChangeset.getId());
+        final String sha = builder.build(new FirstLineOutputHandler()).call();
+        return sha;
     }
 
     private String getLastCommit(Repository repository, RefChange refChange) {

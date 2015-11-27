@@ -44,6 +44,8 @@ Of course, you need to download ojdbc6.jar file preparatorily.
 
 ### Version 0.5.1
 - Fixed build failures in Stash 3.8 and newer
+- Added several non-admin users for creating and forking repositories in tests
+- Fixed #3: access denied on verifying pull request by non-admin user
 
 ### Version 0.5
 - Fixed exception, thrown when a file matched multiple exclusion patterns

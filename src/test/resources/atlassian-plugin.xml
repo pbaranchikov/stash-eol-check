@@ -16,5 +16,7 @@
     <component-import key="repositoryService" interface="com.atlassian.stash.repository.RepositoryService"/>
     <component-import key="repositoryHookService" interface="com.atlassian.stash.hook.repository.RepositoryHookService"/>
     <component-import key="projectService" interface="com.atlassian.stash.project.ProjectService"/>
+    <component-import key="userAdminService" interface="com.atlassian.stash.user.UserAdminService"/>
+    <component-import key="permissionAdminService" interface="com.atlassian.stash.user.PermissionAdminService"/>
     <component key="stash-eol-check-wrapper-factory" class="it.com.pbaranchikov.stash.checks.utils.WrappersFactory" public="false"/>
 </atlassian-plugin>

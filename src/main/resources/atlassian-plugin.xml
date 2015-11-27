@@ -18,7 +18,6 @@
         <resource type="download" name="stash-eol-check.soy.js" location="/soy/stash-eol-check.soy"/>
         <context>stash-eol-check</context>
     </web-resource>
-    <component key="mergeBaseResolver" class="com.pbaranchikov.stash.checks.MergeBaseResolver" public="false"/>
     <component key="realParentResolver" class="com.pbaranchikov.stash.checks.RealParentResolver" public="false"/>
     <component-import key="applicationProperties" interface="com.atlassian.sal.api.ApplicationProperties"/>
     <component-import key="commitService" interface="com.atlassian.stash.commit.CommitService"/>
