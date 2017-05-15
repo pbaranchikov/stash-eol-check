@@ -1,6 +1,7 @@
 package com.pbaranchikov.stash.checks;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -95,7 +96,7 @@ public class RealParentResolver {
         private final Collection<String> parents = new ArrayList<String>();
 
         MultilineReader() {
-            super("UTF-8");
+            super(StandardCharsets.UTF_8);
         }
 
         @Override

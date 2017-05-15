@@ -487,6 +487,8 @@ public class WrappersFactory implements DisposableBean {
 
         WorkspaceImpl(File workspaceDir) {
             this.workspaceDir = workspaceDir;
+            config("user.name", "TestUser");
+            config("user.email", "test@gmail.com");
             createdWorkspaces.add(this);
         }
 
@@ -603,7 +605,6 @@ public class WrappersFactory implements DisposableBean {
         public String toString() {
             return workspaceDir.toString();
         }
-
     }
 
     /**

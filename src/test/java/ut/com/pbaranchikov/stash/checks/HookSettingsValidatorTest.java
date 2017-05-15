@@ -5,6 +5,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import com.atlassian.bitbucket.i18n.I18nService;
+import com.atlassian.bitbucket.i18n.SimpleI18nService;
+import com.atlassian.bitbucket.i18n.SimpleI18nService.Mode;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.setting.Settings;
 import com.atlassian.bitbucket.setting.SettingsValidationErrors;
@@ -24,7 +26,7 @@ public class HookSettingsValidatorTest {
 
     @Before
     public void createValidator() {
-        final I18nService i18nService = Mockito.mock(I18nService.class);
+        final I18nService i18nService = new SimpleI18nService(Mode.RETURN_KEYS_WITH_ARGUMENTS);
         validator = new HookSettingsValidator(i18nService);
         repo = Mockito.mock(Repository.class);
         settings = Mockito.mock(Settings.class);

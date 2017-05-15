@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.pbaranchikov</groupId>
     <artifactId>stash-eol-check</artifactId>
-    <version>0.8</version>
+    <version>0.8-SNAPSHOT</version>
 
     <organization>
         <name>Pavel Baranchikov</name>
@@ -114,6 +114,12 @@
             <version>2.1.4</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.5</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -190,10 +196,10 @@
     </reporting>
 
     <properties>
-        <bitbucket.version>4.0.2</bitbucket.version>
+        <bitbucket.version>5.0.1</bitbucket.version>
         <bitbucket.data.version>${bitbucket.version}</bitbucket.data.version>
-        <amps.version>6.1.2</amps.version>
-        <plugin.testrunner.version>1.2.3</plugin.testrunner.version>
+        <amps.version>6.3.0</amps.version>
+        <plugin.testrunner.version>2.0.0</plugin.testrunner.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
