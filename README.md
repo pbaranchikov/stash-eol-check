@@ -29,7 +29,7 @@ not guaranteed.
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
 ### Build isues
-* to run integration tests, alter atlas-* scripts to enforce APS plugin
+* to run integration tests, alter atlas-* scripts to enforce AMPS plugin
   version 6.3.0 (defaults to 6.2.6).
 
 ## Development
@@ -51,11 +51,9 @@ Of course, you need to download ojdbc6.jar file preparatorily.
 - Updated version of maven-release-plugin
 
 ### Version 0.7
-- Got rid of snapshot dependencies
-
-### Version 0.7
 - Added several non-admin users for creating and forking repositories in tests
 - Fixed #3: access denied on verifying pull request by non-admin user
+- Got rid of snapshot dependencies
 
 ### Version 0.6
 - Converted plug-in to Bitbucket server API
