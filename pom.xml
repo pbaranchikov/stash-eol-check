@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.pbaranchikov</groupId>
     <artifactId>stash-eol-check</artifactId>
-    <version>0.8-SNAPSHOT</version>
+    <version>0.8</version>
 
     <organization>
         <name>Pavel Baranchikov</name>
@@ -20,7 +20,7 @@
         <connection>scm:git:git@github.com:pbaranchikov/stash-eol-check.git</connection>
         <developerConnection>scm:git:git@github.com:pbaranchikov/stash-eol-check.git</developerConnection>
         <url>https://github.com/pbaranchikov/stash-eol-check</url>
-        <tag>HEAD</tag>
+        <tag>stash-eol-check-0.8</tag>
     </scm>
 
     <dependencyManagement>
