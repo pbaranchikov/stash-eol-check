@@ -48,6 +48,7 @@ Of course, you need to download ojdbc6.jar file preparatorily.
 
 ### Version 0.8
 - Converted plug-in to Bitbucket server 5.x API
+- Updated version of maven-release-plugin
 
 ### Version 0.7
 - Got rid of snapshot dependencies
