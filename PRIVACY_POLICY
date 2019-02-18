@@ -1,0 +1,5 @@
+Git/Stash EOL-style check plugin PRIVACY POLICY
+
+Git/Stash EOL-style check plugin is created to be completely
+stateless. It does not store any data of the customer except
+of what is entered in the hook/merge check configuration form.

@@ -11,7 +11,7 @@ http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-W
 This plugin performs both pre-receive hook and merge-check for restricting
 EOL-style of the committed code. Only Linux-style code is allowed.
 
-Plugin is tested on Bitbucket Server 5.0.0 - 5.0.1. Other versions may work, but
+Plugin is tested on Bitbucket Server 6.0.0 - 6.1.0. Other versions may work, but
 not guaranteed.
 
 ## Settings of the hook/merge check
@@ -25,6 +25,8 @@ not guaranteed.
 * 'Exclude files' option allows administrator to set up comma-separated
   list of filename patterns which should not he checked (should be ignored)
   by this plugin in both pre-commit hook and pull request merge check.
+  Please note, that the whole string must match the regular expression. So
+  if you want to exclude all PDF files, you should specify `.*\.[pP][dD][fF]$`.
 
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
