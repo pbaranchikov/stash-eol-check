@@ -7,216 +7,62 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.TreeSet;
+import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nonnull;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.StopWatch;
 
-import com.atlassian.bitbucket.commit.CommitService;
 import com.atlassian.bitbucket.content.AbstractChangeCallback;
 import com.atlassian.bitbucket.content.Change;
-import com.atlassian.bitbucket.content.ChangesRequest;
 import com.atlassian.bitbucket.content.DiffSegmentType;
-import com.atlassian.bitbucket.hook.HookResponse;
-import com.atlassian.bitbucket.hook.repository.PreReceiveRepositoryHook;
-import com.atlassian.bitbucket.hook.repository.RepositoryHookContext;
-import com.atlassian.bitbucket.hook.repository.RepositoryMergeRequestCheck;
-import com.atlassian.bitbucket.hook.repository.RepositoryMergeRequestCheckContext;
-import com.atlassian.bitbucket.i18n.I18nService;
-import com.atlassian.bitbucket.pull.PullRequest;
-import com.atlassian.bitbucket.pull.PullRequestChangesRequest;
-import com.atlassian.bitbucket.pull.PullRequestService;
-import com.atlassian.bitbucket.repository.RefChange;
 import com.atlassian.bitbucket.repository.Repository;
 import com.atlassian.bitbucket.scm.CommandOutputHandler;
 import com.atlassian.bitbucket.scm.git.command.GitCommand;
 import com.atlassian.bitbucket.scm.git.command.GitCommandBuilderFactory;
 import com.atlassian.bitbucket.scm.git.command.diff.GitDiffBuilder;
-import com.atlassian.bitbucket.scm.pull.MergeRequest;
 import com.atlassian.bitbucket.setting.Settings;
 import com.atlassian.utils.process.ProcessException;
 import com.atlassian.utils.process.Watchdog;
-import com.google.common.base.Function;
 import com.google.common.base.Stopwatch;
 
 /**
- * Pre-receive hook and pull request check, enforcing the correct (Linux-like)
- * EOL style of the data, committed to stash/git.
+ * Abstract class holding logic common for verifying EOL style in incoming source code.
  * @author Pavel Baranchikov
  */
-public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRequestCheck {
+public abstract class EolCheckHook {
 
-    private static final char EOL = '\n';
     private static final int BUFFER_SIZE = 1024;
-    private static final String GIT_WHITESPACE_REFERENCE = "http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-Whitespace";
 
-    private final CommitService commitService;
     private final GitCommandBuilderFactory builderFactory;
-    private final I18nService i18service;
-    private final PullRequestService pullRequestService;
 
-    private final RealParentResolver realParentResolver;
     private final Logger log = LoggerFactory.getLogger(getClass());
-    private final Function<Void, AbstractEolHandler> strictHandlerCreator;
-    private final Function<Void, AbstractEolHandler> inheritedEolCreator;
+    private final Supplier<AbstractEolHandler> strictHandlerCreator;
+    private final Supplier<AbstractEolHandler> inheritedEolCreator;
 
-    public EolCheckHook(CommitService commitService, GitCommandBuilderFactory builderFactory,
-            RealParentResolver realParentResolver, I18nService i18service,
-            PullRequestService pullRequestService) {
-        this.commitService = commitService;
-        this.builderFactory = builderFactory;
-        this.realParentResolver = realParentResolver;
-        this.i18service = i18service;
-        this.pullRequestService = pullRequestService;
-        this.strictHandlerCreator = new Function<Void, AbstractEolHandler>() {
-            @Override
-            public AbstractEolHandler apply(Void arg0) {
-                return new StrictEolHandler();
-            }
-        };
-        this.inheritedEolCreator = new Function<Void, AbstractEolHandler>() {
-            public AbstractEolHandler apply(Void arg0) {
-                return new AllowInheritedStyleEolHandler();
-            }
-        };
+    public EolCheckHook(@Nonnull GitCommandBuilderFactory builderFactory) {
+        this.builderFactory = Objects.requireNonNull(builderFactory);
+        this.strictHandlerCreator = StrictEolHandler::new;
+        this.inheritedEolCreator = AllowInheritedStyleEolHandler::new;
     }
 
-    @Override
-    public boolean onReceive(RepositoryHookContext context, Collection<RefChange> changes,
-            HookResponse response) {
-        final Collection<Pattern> excludedFiles = getExcludeFiles(context.getSettings());
-        final Collection<String> files = new TreeSet<String>();
-        for (RefChange refChange : changes) {
-            files.addAll(processChange(context, refChange, excludedFiles));
-        }
-        if (files.isEmpty()) {
-            return true;
-        } else {
-            printError(files, response);
-            return false;
-        }
-    }
-
-    @Override
-    public void check(RepositoryMergeRequestCheckContext context) {
-        final MergeRequest request = context.getMergeRequest();
-        final PullRequest pr = request.getPullRequest();
-        final Settings settings = context.getSettings();
-
-        final Collection<Pattern> excludeFiles = getExcludeFiles(settings);
-        final Collection<String> changedFiles = getChangedPaths(pr, excludeFiles);
-        final Collection<String> wrongFiles = checkForWrongEol(changedFiles, pr, settings);
-        if (!wrongFiles.isEmpty()) {
-            request.veto(i18service.getText("wrong.eol.style.check.error",
-                    "Wrong EOL-style used in the pull request"), getPullRequestError(wrongFiles));
-        }
-    }
-
-    private String getPullRequestError(Collection<String> wrongFiles) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(i18service.getText("wrong.eol.style.description",
-                "End-of-line style must be LF (Linux-style) on committing changes to Git"));
-        sb.append("\n");
-        final Iterator<String> iter = wrongFiles.iterator();
-        while (iter.hasNext()) {
-            sb.append(iter.next());
-            if (iter.hasNext()) {
-                sb.append(", ");
-            }
-        }
-        return sb.toString();
-    }
-
-    private static void printError(Collection<String> files, HookResponse response) {
-        printLn(response, "The following files have wrong EOL-style:");
-        // Collections.sort(paths);
-        for (String path : files) {
-            printLn(response, "  " + path);
-        }
-        printLn(response, "Please, take a look at " + GIT_WHITESPACE_REFERENCE
-                + " for more information");
-    }
-
-    private static void printLn(HookResponse response, String message) {
-        response.out().write(message);
-        response.out().write(EOL);
-    }
-
-    private Collection<String> getChangedPaths(PullRequest pullRequest,
-            Collection<Pattern> excludeFiles) {
-        final PullRequestChangesRequest request = new PullRequestChangesRequest.Builder(pullRequest)
-                .build();
-
-        final ChangesPathsCollector pathsCallback = new ChangesPathsCollector();
-        pullRequestService.streamChanges(request, pathsCallback);
-        final Collection<String> changedFiles = pathsCallback.getChangedPaths();
-        filterFiles(changedFiles, excludeFiles);
-        return changedFiles;
-    }
-
-    private Collection<String> getChangedPaths(Repository repository, String fromId, String toId,
-            Collection<Pattern> excludeFiles) {
-        final ChangesRequest.Builder builder = new ChangesRequest.Builder(repository, toId);
-        if (fromId != null) {
-            builder.sinceId(fromId);
-        }
-        final ChangesRequest pathsRequest = builder.build();
-        final ChangesPathsCollector pathsCallback = new ChangesPathsCollector();
-        commitService.streamChanges(pathsRequest, pathsCallback);
-        final Collection<String> changedFiles = pathsCallback.getChangedPaths();
-        filterFiles(changedFiles, excludeFiles);
-        return changedFiles;
-    }
-
-    private Collection<String> processChange(RepositoryHookContext context, RefChange refChange,
-            Collection<Pattern> excludeFiles) {
-        final StopWatch stopwatch = new StopWatch("Processing changes hook");
-        stopwatch.start("getting real parent");
-        final String fromId = realParentResolver.getRealParent(context.getRepository(), refChange);
-        stopwatch.stop();
-        stopwatch.start("local comps");
-        final String toId = refChange.getToHash();
-        // If sha are equal, no new commits a passed, so nothing to check.
-        // if toId = 00..00, the branch is being deleted. Nothing to check.
-        if (toId.equals(fromId) || (toId.equals(Constants.NON_ID))) {
-            return Collections.emptyList();
-        }
-        stopwatch.stop();
-        stopwatch.start("getting changedPaths");
-        final Collection<String> changedPaths = getChangedPaths(context.getRepository(), fromId,
-                toId, excludeFiles);
-        stopwatch.stop();
-        stopwatch.start("performing main check");
-        final Collection<String> result = checkForWrongEol(changedPaths, context.getRepository(),
-                fromId, toId, context.getSettings());
-        stopwatch.stop();
-        if (log.isDebugEnabled()) {
-            log.debug(stopwatch.prettyPrint());
-        }
-        return result;
-    }
-
-    private Collection<String> checkForWrongEol(Collection<String> changedPaths,
-            PullRequest pullRequest, Settings settings) {
-        return checkForWrongEol(changedPaths, pullRequest.getToRef().getRepository(), pullRequest
-                .getToRef().getLatestCommit(), pullRequest.getFromRef().getLatestCommit(), settings);
-    }
-
-    private Collection<String> checkForWrongEol(Collection<String> changedPaths, Repository repo,
+    @Nonnull
+    protected Collection<String> checkForWrongEol(Collection<String> changedPaths, Repository repo,
             String since, String to, Settings settings) {
         final Collection<String> wrongPaths = new HashSet<String>();
         final boolean allowInheritedEol = Boolean.TRUE.equals(settings
                 .getBoolean(Constants.SETTING_ALLOW_INHERITED_EOL));
-        final Function<Void, AbstractEolHandler> handlerCreator = allowInheritedEol ? inheritedEolCreator
+        final Supplier<AbstractEolHandler> handlerCreator = allowInheritedEol ? inheritedEolCreator
                 : strictHandlerCreator;
         for (String path : changedPaths) {
             final GitDiffBuilder builder = builderFactory.builder(repo).diff().rev(to).path(path);
             if (since != null) {
                 builder.ancestor(since);
             }
-            final AbstractEolHandler outputHandler = handlerCreator.apply(null);
+            final AbstractEolHandler outputHandler = handlerCreator.get();
             builder.contextLines(outputHandler.getRequiredContext());
             final GitCommand<Boolean> cmd = builder.build(outputHandler);
             final Boolean result = cmd.call();
@@ -227,7 +73,8 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         return wrongPaths;
     }
 
-    private static Collection<Pattern> getExcludeFiles(Settings settings) {
+    @Nonnull
+    protected static Collection<Pattern> getExcludeFiles(Settings settings) {
         final String includeFiles = settings.getString(Constants.SETTING_EXCLUDED_FILES);
         if (includeFiles == null) {
             return Collections.emptyList();
@@ -241,7 +88,7 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         return patterns;
     }
 
-    private Collection<String> filterFiles(Collection<String> files,
+    protected Collection<String> filterFiles(Collection<String> files,
             Collection<Pattern> excludeFiles) {
         if (excludeFiles.isEmpty()) {
             return files;
@@ -259,11 +106,16 @@ public class EolCheckHook implements PreReceiveRepositoryHook, RepositoryMergeRe
         return files;
     }
 
+    @Nonnull
+    protected Logger getLog() {
+        return log;
+    }
+
     /**
      * Callback, collecting all the paths, changed in the requested change
      * range.
      */
-    private static class ChangesPathsCollector extends AbstractChangeCallback {
+    protected static class ChangesPathsCollector extends AbstractChangeCallback {
         private final Collection<String> changedPaths = new HashSet<String>();
 
         @Override

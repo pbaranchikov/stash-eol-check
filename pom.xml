@@ -91,33 +91,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>jsr311-api</artifactId>
-            <version>1.1.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.8</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>1.8</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.atlassian.upm</groupId>
-            <artifactId>upm-api</artifactId>
-            <version>2.1.4</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
-            <version>2.5</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -205,10 +181,10 @@
     </reporting>
 
     <properties>
-        <bitbucket.version>5.0.1</bitbucket.version>
+        <bitbucket.version>6.0.0</bitbucket.version>
         <bitbucket.data.version>${bitbucket.version}</bitbucket.data.version>
-        <amps.version>6.3.0</amps.version>
-        <plugin.testrunner.version>2.0.0</plugin.testrunner.version>
+        <amps.version>8.0.0</amps.version>
+        <plugin.testrunner.version>2.0.1</plugin.testrunner.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

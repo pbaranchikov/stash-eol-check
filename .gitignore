@@ -1,2 +1,4 @@
 /target/
 /.checkstyle
+/.idea/
+/.DS_Store

@@ -6,17 +6,19 @@ import java.util.Map.Entry;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import javax.annotation.Nonnull;
+
 import com.atlassian.bitbucket.i18n.I18nService;
-import com.atlassian.bitbucket.repository.Repository;
-import com.atlassian.bitbucket.setting.RepositorySettingsValidator;
+import com.atlassian.bitbucket.scope.Scope;
 import com.atlassian.bitbucket.setting.Settings;
 import com.atlassian.bitbucket.setting.SettingsValidationErrors;
+import com.atlassian.bitbucket.setting.SettingsValidator;
 
 /**
  * Validator for hook settings.
  * @author Pavel Baranchikov
  */
-public class HookSettingsValidator implements RepositorySettingsValidator {
+public class HookSettingsValidator implements SettingsValidator {
 
     private final I18nService i18nService;
 
@@ -25,7 +27,8 @@ public class HookSettingsValidator implements RepositorySettingsValidator {
     }
 
     @Override
-    public void validate(Settings settings, SettingsValidationErrors errors, Repository repository) {
+    public void validate(@Nonnull Settings settings,
+            @Nonnull SettingsValidationErrors errors, @Nonnull Scope scope) {
         final String excludedFiles = settings.getString(Constants.SETTING_EXCLUDED_FILES);
         validateExcludedFiles(errors, excludedFiles);
     }

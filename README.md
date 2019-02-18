@@ -28,9 +28,6 @@ not guaranteed.
 
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
-### Build isues
-* to run integration tests, alter atlas-* scripts to enforce AMPS plugin
-  version 6.3.0 (defaults to 6.2.6).
 
 ## Development
 
@@ -45,6 +42,11 @@ mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 \
 Of course, you need to download ojdbc6.jar file preparatorily.
 
 ## Version history
+
+### Version 0.9
+- Converted plug-in to Bitbucket server 6.x API
+- According to the API changes, pre-receive hook and pull request merge check
+  must be enabled separately
 
 ### Version 0.8
 - Converted plug-in to Bitbucket server 5.x API
