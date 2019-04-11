@@ -18,7 +18,10 @@ import org.apache.log4j.Logger;
 import org.junit.Assert;
 import org.springframework.beans.factory.DisposableBean;
 
+import com.atlassian.bitbucket.hook.repository.DisableRepositoryHookRequest;
+import com.atlassian.bitbucket.hook.repository.EnableRepositoryHookRequest;
 import com.atlassian.bitbucket.hook.repository.RepositoryHookService;
+import com.atlassian.bitbucket.hook.repository.SetRepositoryHookSettingsRequest;
 import com.atlassian.bitbucket.permission.Permission;
 import com.atlassian.bitbucket.permission.PermissionAdminService;
 import com.atlassian.bitbucket.permission.SetPermissionRequest;
@@ -31,6 +34,7 @@ import com.atlassian.bitbucket.repository.RepositoryCreateRequest;
 import com.atlassian.bitbucket.repository.RepositoryForkRequest;
 import com.atlassian.bitbucket.repository.RepositoryService;
 import com.atlassian.bitbucket.repository.RepositoryUpdateRequest;
+import com.atlassian.bitbucket.scope.RepositoryScope;
 import com.atlassian.bitbucket.server.ApplicationPropertiesService;
 import com.atlassian.bitbucket.setting.Settings;
 import com.atlassian.bitbucket.user.ApplicationUser;
@@ -50,6 +54,8 @@ public class WrappersFactory implements DisposableBean {
     private static final String STASH_USER = "admin";
     private static final String STASH_PASSWORD = STASH_USER;
     private static final String HOOK_KEY = "com.pbaranchikov.stash-eol-check:stash-check-eol-hook";
+    private static final String MERGE_CHECK_KEY =
+            "com.pbaranchikov.stash-eol-check:stash-check-eol-merge-check";
     private static final String GIT_BRANCH = "branch";
     private static final String GIT_TAG = "tag";
     private static final String GIT_PUSH = "push";
@@ -375,7 +381,12 @@ public class WrappersFactory implements DisposableBean {
             user.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                 @Override
                 public Void perform() throws RuntimeException {
-                    repositoryHookService.enable(repository, HOOK_KEY);
+                    repositoryHookService.enable(
+                            new EnableRepositoryHookRequest.Builder(new RepositoryScope(repository),
+                                    HOOK_KEY).build());
+                    repositoryHookService.enable(
+                            new EnableRepositoryHookRequest.Builder(new RepositoryScope(repository),
+                                    MERGE_CHECK_KEY).build());
                     return null;
                 }
             });
@@ -386,7 +397,10 @@ public class WrappersFactory implements DisposableBean {
             user.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                 @Override
                 public Void perform() throws RuntimeException {
-                    repositoryHookService.disable(repository, HOOK_KEY);
+                    repositoryHookService.disable(new DisableRepositoryHookRequest.Builder(
+                            new RepositoryScope(repository), HOOK_KEY).build());
+                    repositoryHookService.disable(new DisableRepositoryHookRequest.Builder(
+                            new RepositoryScope(repository), MERGE_CHECK_KEY).build());
                     return null;
                 }
             });
@@ -411,7 +425,12 @@ public class WrappersFactory implements DisposableBean {
             user.getSecurityContext().call(new Operation<Void, RuntimeException>() {
                 @Override
                 public Void perform() throws RuntimeException {
-                    repositoryHookService.setSettings(repository, HOOK_KEY, hookSettings);
+                    repositoryHookService.setSettings(new SetRepositoryHookSettingsRequest.Builder(
+                            new RepositoryScope(repository), HOOK_KEY).settings(hookSettings)
+                            .build());
+                    repositoryHookService.setSettings(new SetRepositoryHookSettingsRequest.Builder(
+                            new RepositoryScope(repository), MERGE_CHECK_KEY).settings(hookSettings)
+                            .build());
                     return null;
                 }
             });
@@ -444,7 +463,7 @@ public class WrappersFactory implements DisposableBean {
                         public PullRequest perform() throws RuntimeException {
                             return pullRequestService.create("pull-request-n",
                                     "New pull request from repo " + repository.getName(),
-                                    Collections.<String>emptySet(), repository, branchName,
+                                    Collections.emptySet(), repository, branchName,
                                     targetWiredRepository.repository, branchName);
                         }
                     });

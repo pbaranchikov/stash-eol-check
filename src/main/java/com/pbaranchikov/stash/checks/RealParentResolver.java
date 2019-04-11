@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
+import javax.annotation.Nullable;
+
 import com.atlassian.bitbucket.commit.Commit;
 import com.atlassian.bitbucket.commit.CommitRequest;
 import com.atlassian.bitbucket.commit.CommitService;
@@ -40,6 +42,7 @@ public class RealParentResolver {
      * @param refChange commit to search existing parent for
      * @return nearest existing parent commit SHA1
      */
+    @Nullable
     public String getRealParent(Repository repository, RefChange refChange) {
         if (!refChange.getFromHash().equals(Constants.NON_ID)) {
             return refChange.getFromHash();

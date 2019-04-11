@@ -11,7 +11,7 @@ http://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration#Formatting-and-W
 This plugin performs both pre-receive hook and merge-check for restricting
 EOL-style of the committed code. Only Linux-style code is allowed.
 
-Plugin is tested on Bitbucket Server 5.0.0 - 5.0.1. Other versions may work, but
+Plugin is tested on Bitbucket Server 5.2.0 - 5.16.25. Other versions may work, but
 not guaranteed.
 
 ## Settings of the hook/merge check
@@ -28,9 +28,6 @@ not guaranteed.
 
 ## Known issues
 * only last commit is analyzed in pre-receive hook during the initial push
-### Build isues
-* to run integration tests, alter atlas-* scripts to enforce APS plugin
-  version 6.3.0 (defaults to 6.2.6).
 
 ## Development
 
@@ -45,6 +42,9 @@ mvn install:install-file -DgroupId=com.oracle -DartifactId=ojdbc6 \
 Of course, you need to download ojdbc6.jar file preparatorily.
 
 ## Version history
+
+### Version 0.8.1
+- Converted plug-in to Butbucket server 5.2.x API
 
 ### Version 0.8
 - Converted plug-in to Bitbucket server 5.x API
