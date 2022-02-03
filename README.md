@@ -45,6 +45,9 @@ Of course, you need to download ojdbc6.jar file preparatorily.
 
 ## Version history
 
+### Version 0.9.1
+- Certified for Bitbucket Datacenter edition
+
 ### Version 0.9
 - Converted plug-in to Bitbucket server 6.x API
 - According to the API changes, pre-receive hook and pull request merge check

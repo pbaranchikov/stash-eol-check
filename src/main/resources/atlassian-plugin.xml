@@ -7,7 +7,9 @@
         <vendor name="Pavel Baranchikov" url="https://github.com/pbaranchikov/"/>
         <param name="plugin-icon">images/pluginIcon.png</param>
         <param name="plugin-logo">images/pluginLogo.png</param>
+        <param name="atlassian-data-center-status">compatible</param>
         <param name="atlassian-data-center-compatible">true</param>
+        <param name="plugin-type">both</param>
     </plugin-info>
     <resource type="i18n" name="i18n" location="i18n/stash-eol-check"/>
     <web-resource key="stash-eol-check-resources" name="stash-eol-check Web Resources">
